@@ -14,18 +14,16 @@
  *
  */
 metadata {
-	definition (name: "Hue B Smart Bulb", namespace: "info_fiend", author: "Anthony Pastor") {
+	definition (name: "Hue B Smart White Ambiance", namespace: "info_fiend", author: "Anthony Pastor") {
 		capability "Switch Level"
 		capability "Actuator"
-		capability "Color Control"
-        capability "Color Temperature"
+	        capability "Color Temperature"
 		capability "Switch"
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
-        capability "Configuration"
+        	capability "Configuration"
         
-        command "setAdjustedColor"
         command "reset"
         command "refresh"
         command "flash"
@@ -33,8 +31,6 @@ metadata {
         command "setTransitionTime"
         command "ttUp"
         command "ttDown"
-        command "colorloopOn"
-		command "colorloopOff"
         command "updateStatus"
 		command "getHextoXY"
 
@@ -68,9 +64,7 @@ metadata {
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
 			}
-			tileAttribute ("device.color", key: "COLOR_CONTROL") {
-				attributeState "color", action:"setAdjustedColor"
-			}
+
 		}
 
 		/* reset / refresh */	
@@ -120,14 +114,9 @@ metadata {
 			state "default", label: 'User: ${currentValue}'
         }
 
-        standardTile("toggleColorloop", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "colorloop", label:"On", action:"colorloopOff", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-on.png"
-            state "none", label:"Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-off.png"
-            state "updating", label:"Working", icon: "st.secondary.secondary"
-		}
 	}
 	main(["rich-control"])
-	details(["rich-control","ttlabel","ttdown","ttup","valueCT","colorTemp","colormode","hueID","toggleColorloop", "reset","refresh"])	//  "host", "username",
+	details(["rich-control","ttlabel","ttdown","ttup","valueCT","colorTemp","hueID","reset","refresh"])	//  "host", "username",
 }
 
 private configure() {		
@@ -182,75 +171,6 @@ def setLevel(level) {
 	        body: [on: true, bri: lvl, transitiontime: tt]
 		])
 	)    
-}
-
-/**
- * capability.colorControl 
- **/
-def setColor(value) {
-	log.trace "setColor(${value})"
-	def validValues = [:]
-	def commandData = parent.getCommandData(device.deviceNetworkId)       
-
-    log.debug "value.level: ${value.level}"
-    def bri = value.level ?: this.device.currentValue("level")
-    log.debug "bri: ${bri}" 
-    validValues.bri = parent.scaleLevel(bri, true, 254)
-    log.debug "validValues.bri: ${validValues.bri}"
-    
-    if (value.switch == "off" ) {
-        validValues.on = false
-    } else if (value.switch == "on" || validValues.bri > 0) {
-		validValues.on = true
-    }
-    
-    validValues.tt = device.currentValue("transitionTime") as Integer ?: 0
-    
-    if (value.hex != null) {
-		if (value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
-			validValues.xy = getHextoXY(value.hex)
-		} else {
-            log.warn "$value.hex is not a valid color"
-        }
-	}
-
-    if (validValues.xy) {
-    
-		log.debug "Setting color to [on:${validValues.on}, xy:${validValues.xy}, bri:${validValues.bri}, transitiontime:${validValues.tt}]"
-
-		parent.sendHubCommand(new physicalgraph.device.HubAction(
-    		[
-        		method: "PUT",
-				path: "/api/${commandData.username}/lights/${commandData.deviceId}/state",
-		        headers: [
-		        	host: "${commandData.ip}"
-				],
-	        	body: [on: validValues.on, xy: validValues.xy, bri: validValues.bri, transitiontime: validValues.tt]
-			])
-		)
-		sendEvent(name: "colormode", value: "XY", isStateChange: true) 
-	} else {
-    	log.trace "setColor: no XY values, so using Hue & Saturation."
-		def hue = value.hue ?: this.device.currentValue("hue")
-    	validValues.hue = parent.scaleLevel(hue, true, 65535)
-	
-		def sat = value.sat ?: this.device.currentValue("saturation")
-	    validValues.sat = parent.scaleLevel(sat, true, 254)
-
-		log.debug "Setting color to [on: ${validValues.on}, hue:${validValues.hue}, sat:${validValues.sat}, bri:${validValues.bri}, transitiontime:${validValues.tt}]"
-
-		parent.sendHubCommand(new physicalgraph.device.HubAction(
-    		[
-    	    	method: "PUT",
-				path: "/api/${commandData.username}/lights/${commandData.deviceId}/state",
-	        	headers: [
-	    	    	host: "${commandData.ip}"
-				],
-		        body: [on: validValues.on, hue: validValues.hue, sat: validValues.sat, bri: validValues.bri, transitiontime: validValues.tt]
-			])
-		)    
-		sendEvent(name: "colormode", value: "HS", isStateChange: true) 
-    }
 }
 
 def setHue(hue) {
@@ -453,121 +373,6 @@ def updateStatus(action, param, val) {
 				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
         }
     }
-}
-
-void setAdjustedColor(value) {
-	log.trace "setAdjustedColor(${value}) ."
-	if (value) {
-
-        def adjusted = [:]
-        adjusted = value 
-    
-        value.level = device.currentValue("level") ?: 100 // null
-        log.debug "adjusted = ${adjusted}"
-        setColor(value)
-    } else {
-		log.warn "Invalid color input"
-	}
-}
-
-
-/**
- * capability.colorLoop
- **/
-void colorloopOn() {
-    log.debug "Executing 'colorloopOn'"
-    def tt = device.currentValue("transitionTime") as Integer ?: 0
-    
-    def dState = device.latestValue("switch") as String ?: "off"
-	def level = device.currentValue("level") ?: 100
-    if (level == 0) { percent = 100}
-
-    sendEvent(name: "effect", value: "colorloop", isStateChange: true)
-    
-	def commandData = parent.getCommandData(device.deviceNetworkId)
-	parent.sendHubCommand(new physicalgraph.device.HubAction(
-    	[
-        	method: "PUT",
-			path: "/api/${commandData.username}/lights/${commandData.deviceId}/state",
-	        headers: [
-	        	host: "${commandData.ip}"
-			],
-	        body: [on:true, effect: "colorloop", transitiontime: tt]
-		])
-	)
-}
-
-void colorloopOff() {
-    log.debug "Executing 'colorloopOff'"
-    def tt = device.currentValue("transitionTime") as Integer ?: 0
-    
-    def commandData = parent.getCommandData(device.deviceNetworkId)
-    sendEvent(name: "effect", value: "none", isStateChange: true)    
-	parent.sendHubCommand(new physicalgraph.device.HubAction(
-    	[
-        	method: "PUT",
-			path: "/api/${commandData.username}/lights/${commandData.deviceId}/state",
-	        headers: [
-	        	host: "${commandData.ip}"
-			],
-	        body: [on:true, effect: "none", transitiontime: tt]
-		])
-	)
-}
-
-
-/**
- * Misc
- **/
-private getHextoXY(String colorStr) {
-    // For the hue bulb the corners of the triangle are:
-    // -Red: 0.675, 0.322
-    // -Green: 0.4091, 0.518
-    // -Blue: 0.167, 0.04
-
-    def cred = Integer.valueOf( colorStr.substring( 1, 3 ), 16 )
-    def cgreen = Integer.valueOf( colorStr.substring( 3, 5 ), 16 )
-    def cblue = Integer.valueOf( colorStr.substring( 5, 7 ), 16 )
-
-    double[] normalizedToOne = new double[3];
-    normalizedToOne[0] = (cred / 255);
-    normalizedToOne[1] = (cgreen / 255);
-    normalizedToOne[2] = (cblue / 255);
-    float red, green, blue;
-
-    // Make red more vivid
-    if (normalizedToOne[0] > 0.04045) {
-       red = (float) Math.pow(
-                (normalizedToOne[0] + 0.055) / (1.0 + 0.055), 2.4);
-    } else {
-        red = (float) (normalizedToOne[0] / 12.92);
-    }
-
-    // Make green more vivid
-    if (normalizedToOne[1] > 0.04045) {
-        green = (float) Math.pow((normalizedToOne[1] + 0.055) / (1.0 + 0.055), 2.4);
-    } else {
-        green = (float) (normalizedToOne[1] / 12.92);
-    }
-
-    // Make blue more vivid
-    if (normalizedToOne[2] > 0.04045) {
-        blue = (float) Math.pow((normalizedToOne[2] + 0.055) / (1.0 + 0.055), 2.4);
-    } else {
-        blue = (float) (normalizedToOne[2] / 12.92);
-    }
-
-    float X = (float) (red * 0.649926 + green * 0.103455 + blue * 0.197109);
-    float Y = (float) (red * 0.234327 + green * 0.743075 + blue * 0.022598);
-    float Z = (float) (red * 0.0000000 + green * 0.053077 + blue * 1.035763);
-
-    float x = (X != 0 ? X / (X + Y + Z) : 0);
-    float y = (Y != 0 ? Y / (X + Y + Z) : 0);
-
-    double[] xy = new double[2];
-    xy[0] = x;
-    xy[1] = y;
-    return xy;
 }
 
 def getDeviceType() { return "lights" }
