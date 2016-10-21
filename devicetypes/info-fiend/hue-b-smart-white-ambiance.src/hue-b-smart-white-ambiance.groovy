@@ -1,5 +1,5 @@
 /**
- *  Hue B Smart Bulb
+ *  Hue B Smart White Ambiance
  *
  *  Copyright 2016 Anthony Pastor
  *
