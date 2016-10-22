@@ -12,6 +12,10 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	(beta) version .9
+ *	(beta) version .9a - added submitOnChange() to bulb, group, and scene selection pages
+ *
+ *
  */
  
 definition(
@@ -436,14 +440,14 @@ def chooseBulbs(params) {
 			addedBulbs.sort{it.value.name}.each { 
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.name
-				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId])
+				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Bulbs") {
 			availableBulbs.sort{it.value.name}.each { 
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.name
-				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Add ${name}", params: [mac: params.mac, add: it.key])
+				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
 			}
         }
     }
@@ -528,14 +532,14 @@ def chooseScenes(params) {
 			addedScenes.sort{it.value.name}.each { 
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.name
-				href(name:"${devId}", page:"chooseScenes", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId])
+				href(name:"${devId}", page:"chooseScenes", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Scenes") {
 			availableScenes.sort{it.value.name}.each { 
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.name
-				href(name:"${devId}", page:"chooseScenes", description:"", title:"Add ${name}", params: [mac: params.mac, add: it.key])
+				href(name:"${devId}", page:"chooseScenes", description:"", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
 			}
         }
     }
@@ -639,13 +643,13 @@ def chooseGroups(params) {
 
     return dynamicPage(name:"chooseGroups", title: "", install:false, uninstall:false, nextPage: "chooseSchedules") {
 	    section("") { 
-			href(name: "manageBridge", page: "manageBridge", description: "", title: "Back to Bridge", params: [mac: params.mac])
+			href(name: "manageBridge", page: "manageBridge", description: "", title: "Back to Bridge", params: [mac: params.mac], submitOnChange: true )
         }
 	    section("Hue Groups Added to SmartThings") {
 			addedGroups.sort{it.value.name}.each { 
 				def devId = "${params.mac}/GROUP${it.key}"
 				def name = it.value.name
-				href(name:"${devId}", page:"chooseGroups", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId])
+				href(name:"${devId}", page:"chooseGroups", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Hue Groups") {
