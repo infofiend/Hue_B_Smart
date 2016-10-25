@@ -395,7 +395,22 @@ def chooseBulbs(params) {
 			} catch (grails.validation.ValidationException e) {
             	log.debug "${devId} already created."
 			}    
-	    } else {
+	    }
+		else if (b.type.equalsIgnoreCase("Color Temperature Light")) {
+			 try {
+                    def d = addChildDevice("info_fiend", "Hue B Smart White Ambiance", devId, bridge.value.hub, ["label": b.name])
+				["ct", "bri", "reachable", "on"].each { p ->
+                        		d.updateStatus("state", p, b.state[p])
+                		}
+                d.updateStatus("state", "transitiontime", 4)
+		d.configure()
+                addedBulbs[bulbId] = b
+                availableBulbs.remove(bulbId)
+           		} catch (grails.validation.ValidationException e) {
+                log.debug "${devId} already created."
+            		}
+		}
+		else {
 			try {
             	def d = addChildDevice("info_fiend", "Hue B Smart Bulb", devId, bridge.value.hub, ["label": b.name])
                 ["bri", "sat", "reachable", "hue", "on", "xy", "ct", "effect"].each { p ->
@@ -1193,7 +1208,12 @@ def itemDiscoveryHandler(evt) {
 					["reachable", "on", "bri"].each { p -> 
    	                	it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
 					}
-           	    } else {
+           	    }
+			else if (type.equalsIgnoreCase("Color Temperature Light")) {
+					 ["bri", "ct", "reachable", "on"].each { p ->
+                            	it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
+                    }
+			else {
 					["reachable", "on", "bri", "hue", "sat", "ct", "xy","effect", "colormode"].each { p -> 
                    		it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])                        
 					}
