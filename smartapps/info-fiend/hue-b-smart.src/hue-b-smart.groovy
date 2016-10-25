@@ -1215,7 +1215,8 @@ def itemDiscoveryHandler(evt) {
 			else if (type.equalsIgnoreCase("Color Temperature Light")) {
 					 ["bri", "ct", "reachable", "on"].each { p ->
                             	it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
-                    }
+                    			}
+		    }
 			else {
 					["reachable", "on", "bri", "hue", "sat", "ct", "xy","effect", "colormode"].each { p -> 
                    		it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])                        
