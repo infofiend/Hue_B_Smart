@@ -12,6 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  version 1.1: added setTo2Groups() - use this function to set scene to two different groups at once 
  */
 metadata {
 	definition (name: "Hue B Smart Scene", namespace: "info_fiend", author: "Anthony Pastor") {
@@ -22,6 +23,7 @@ metadata {
         capability "Configuration"
         
 		command "setToGroup"
+        command "setTo2Groups"        
         command "updateScene"
         command	"updateSceneFromDevice"
         command "updateStatus"
@@ -130,6 +132,47 @@ def setToGroup ( Integer inGroupID = 0) {
 	log.debug "${this.device.label}: setToGroup: sceneID = ${sceneID} "
     log.debug "${this.device.label}: setToGroup: theGroup = ${inGroupID} "
     String gPath = "/api/${commandData.username}/groups/${inGroupID}/action"
+
+    parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "${gPath}",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [scene: "${commandData.deviceId}"]
+		])
+	)
+
+}
+
+def setTo2Groups ( group1, group2) {
+	log.debug("setTo2Groups ${this.device.label}: Turning scene on for groups ${group1} , ${group2}!")
+
+ 	def commandData = parent.getCommandData(this.device.deviceNetworkId)
+	log.debug "setTo2Groups: ${commandData}"
+    
+	def sceneID = commandData.deviceId
+//    def groupID = inGroupID ?: 0
+
+	log.debug "${this.device.label}: setTo2Groups: sceneID = ${sceneID} "
+    log.debug "${this.device.label}: setTo2Groups: group1 = ${group1} "
+    
+    String gPath = "/api/${commandData.username}/groups/${group1}/action"
+
+    parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "${gPath}",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [scene: "${commandData.deviceId}"]
+		])
+	)
+
+    log.debug "${this.device.label}: setTo2Groups: group2 = ${group2} "
+    gPath = "/api/${commandData.username}/groups/${group2}/action"
 
     parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
