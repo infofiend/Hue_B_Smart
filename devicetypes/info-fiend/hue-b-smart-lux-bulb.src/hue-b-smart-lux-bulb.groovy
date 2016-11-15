@@ -267,7 +267,7 @@ def flash_off() {
 
                 
 def updateStatus(action, param, val) {
-	log.debug "updating status: ${param}:${val}"
+	log.debug "Received Lux Bulb status from Hue Hub: ${param}:${val}"
 	if (action == "state") {
 		switch(param) {
         	case "on":
@@ -286,13 +286,14 @@ def updateStatus(action, param, val) {
             case "transitiontime":
             	sendEvent(name: "transitionTime", value: val, isStateChange: true)
                 break                
-            case "alert":
+/**            case "alert":
             	if (val == "none") {
             		flash_off() 	//sendEvent(name: "alert", value: val, isStateChange: true)
                 } else {
-                	flash_on()
+                	flash()
                 }
                 break
+**/                
 			case "reachable":
 				sendEvent(name: "reachable", value: val, isStateChange: true)
 				break

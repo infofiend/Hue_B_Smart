@@ -490,14 +490,14 @@ private updateStatus(action, param, val) {
             case "effect":
             	sendEvent(name: "effect", value: val, isStateChange: true)
                 break
-			case "alert":
+/**			case "alert":
             	if (val == "none") {
             		flash_off() 	//sendEvent(name: "alert", value: val, isStateChange: true)
                 } else if (val == "lselect") {
                 	flash_on()
                 }
                 break
-    
+**/    
 			default: 
 				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
         }
