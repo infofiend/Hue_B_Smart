@@ -12,7 +12,11 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Version 1.1 -- fixed Hue and Saturation updates, added hue and saturation tiles & sliders, added Flash tile, conformed device layout with Hue Group DTH, 
+ * 					and added setHuefrom100 function (for using a number 1-100 in CoRE - instead of the 1-360 that CoRE normally uses)
  */
+ 
+ 
 metadata {
 	definition (name: "Hue B Smart Bulb", namespace: "info_fiend", author: "Anthony Pastor") {
 		capability "Switch Level"
@@ -37,10 +41,16 @@ metadata {
 		command "colorloopOff"
         command "updateStatus"
 		command "getHextoXY"
+        command "setHue"
+        command "setHueUsing100"               
+        command "setSaturation"
+        command "setColor"
+        command "setLevel"
+        command "setColorTemperature"
 
  		attribute "colorTemp", "number"
 		attribute "bri", "number"
-		attribute "sat", "number"
+		attribute "saturation", "number"
         attribute "level", "number"
 		attribute "reachable", "string"
 		attribute "hue", "number"
@@ -81,6 +91,21 @@ metadata {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
+        /* Hue & Saturation */
+		valueTile("valueHue", "device.hue", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "hue", label: 'Hue: ${currentValue}'
+        }
+        controlTile("hue", "device.hue", "slider", inactiveLabel: false,  width: 4, height: 1) { 
+        	state "setHue", action:"setHue"
+		}
+		valueTile("valueSat", "device.saturation", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "saturation", label: 'Sat: ${currentValue}'
+        }
+        controlTile("saturation", "device.saturation", "slider", inactiveLabel: false,  width: 4, height: 1) { 
+        	state "setSaturation", action:"setSaturation"
+		}
+        
+        
         /* Color Temperature */
 		valueTile("valueCT", "device.colorTemp", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
 			state "colorTemp", label: 'Color Temp:  ${currentValue}'
@@ -95,14 +120,14 @@ metadata {
 		}
         
         /* transition time */
-		valueTile("ttlabel", "transitionTime", decoration: "flat", width: 4, height: 1) {
+		valueTile("ttlabel", "transitionTime", decoration: "flat", width: 2, height: 1) {
 			state "default", label:'Transition Time: ${currentValue}00ms'
 		}
-		valueTile("ttdown", "device.transitionTime", decoration: "flat", width: 1, height: 1) {
-			state "default", label: "-", action:"ttDown"
+		valueTile("ttdown", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
+			state "default", label: "TT -100ms", action:"ttDown"
 		}
-		valueTile("ttup", "device.transitionTime", decoration: "flat", width: 1, height: 1) {
-			state "default", label:"+", action:"ttUp"
+		valueTile("ttup", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
+			state "default", label:"TT +100ms", action:"ttUp"
 		}
         
         /* misc */
@@ -127,7 +152,7 @@ metadata {
 		}
 	}
 	main(["rich-control"])
-	details(["rich-control","ttlabel","ttdown","ttup","valueCT","colorTemp","colormode","hueID","toggleColorloop", "reset","refresh"])	//  "host", "username",
+	details(["rich-control","colormode","hueID","valueHue", "hue", "valueSat", "saturation", "valueCT","colorTemp","ttlabel","ttdown","ttup","toggleColorloop","flash", "reset","refresh"])	//  "host", "username",
 }
 
 private configure() {		
@@ -190,25 +215,35 @@ def setLevel(level) {
 def setColor(value) {
 	log.trace "setColor(${value})"
 	def validValues = [:]
-	def commandData = parent.getCommandData(device.deviceNetworkId)       
+	def commandData = parent.getCommandData(device.deviceNetworkId)
+    def sendBody = [:]
 
-    log.debug "value.level: ${value.level}"
-    def bri = value.level ?: this.device.currentValue("level")
-    log.debug "bri: ${bri}" 
-    validValues.bri = parent.scaleLevel(bri, true, 254)
-    log.debug "validValues.bri: ${validValues.bri}"
-    
-    if (value.switch == "off" ) {
-        validValues.on = false
-    } else if (value.switch == "on" || validValues.bri > 0) {
-		validValues.on = true
-    }
-    
-    validValues.tt = device.currentValue("transitionTime") as Integer ?: 0
+	if (value.level) {
+	    log.debug "value.level: ${value.level}"
+    	def bri = value.level //?: this.device.currentValue("level")
+	    log.debug "bri: ${bri}" 
+    	validValues.bri = parent.scaleLevel(bri, true, 254)
+	    log.debug "validValues.bri: ${validValues.bri}"
+        sendBody["bri"] = validValues.bri
+		if (value.level > 0) { 
+        	sendBody["on"] = true
+        } else {
+        	sendBody["on"] = false
+		}            
+	}
+
+	if (value.switch == "off" ) {
+    	sendBody["on"] = false
+    } else if (value.switch == "on") {
+		sendBody["on"] = true
+	}
+        
+    sendBody["transitiontime"] = device.currentValue("transitionTime") as Integer ?: 0
     
     if (value.hex != null) {
 		if (value.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
 			validValues.xy = getHextoXY(value.hex)
+            sendBody["xy"] = validValues.xy
 		} else {
             log.warn "$value.hex is not a valid color"
         }
@@ -216,7 +251,7 @@ def setColor(value) {
 
     if (validValues.xy) {
     
-		log.debug "Setting color to [on:${validValues.on}, xy:${validValues.xy}, bri:${validValues.bri}, transitiontime:${validValues.tt}]"
+		log.debug "setColor: XY value found.  Sending ${sendBody} " //[on:${validValues.on}, xy:${validValues.xy}, bri:${validValues.bri}, transitiontime:${validValues.tt}]"
 
 		parent.sendHubCommand(new physicalgraph.device.HubAction(
     		[
@@ -225,19 +260,22 @@ def setColor(value) {
 		        headers: [
 		        	host: "${commandData.ip}"
 				],
-	        	body: [on: validValues.on, xy: validValues.xy, bri: validValues.bri, transitiontime: validValues.tt]
+	        	body: sendBody 	//[on: validValues.on, xy: validValues.xy, bri: validValues.bri, transitiontime: validValues.tt]
 			])
 		)
 		sendEvent(name: "colormode", value: "XY", isStateChange: true) 
+        sendEvent(name: "hue", value: value.hue as Integer) //, isStateChange: true) 
+        sendEvent(name: "saturation", value: value.saturation as Integer, isStateChange: true) 
 	} else {
     	log.trace "setColor: no XY values, so using Hue & Saturation."
 		def hue = value.hue ?: this.device.currentValue("hue")
     	validValues.hue = parent.scaleLevel(hue, true, 65535)
-	
-		def sat = value.sat ?: this.device.currentValue("saturation")
-	    validValues.sat = parent.scaleLevel(sat, true, 254)
-
-		log.debug "Setting color to [on: ${validValues.on}, hue:${validValues.hue}, sat:${validValues.sat}, bri:${validValues.bri}, transitiontime:${validValues.tt}]"
+		sendBody["hue"] = validValues.hue
+		def sat = value.saturation ?: this.device.currentValue("saturation")
+	    validValues.saturation = parent.scaleLevel(sat, true, 254)
+		sendBody["sat"] = validValues.saturation
+        
+		log.debug "Sending ${sendBody} " 	//[on: ${validValues.on}, hue:${validValues.hue}, sat:${validValues.saturation}, bri:${validValues.bri}, transitiontime:${validValues.tt}]"
 
 		parent.sendHubCommand(new physicalgraph.device.HubAction(
     		[
@@ -246,24 +284,35 @@ def setColor(value) {
 	        	headers: [
 	    	    	host: "${commandData.ip}"
 				],
-		        body: [on: validValues.on, hue: validValues.hue, sat: validValues.sat, bri: validValues.bri, transitiontime: validValues.tt]
+		        body: sendBody 	//[on: validValues.on, hue: validValues.hue, sat: validValues.saturation, bri: validValues.bri, transitiontime: validValues.tt]
 			])
 		)    
-		sendEvent(name: "colormode", value: "HS", isStateChange: true) 
+		sendEvent(name: "colormode", value: "HS") //, isStateChange: true) 
+        sendEvent(name: "hue", value: value.hue) //, isStateChange: true) 
+        sendEvent(name: "saturation", value: value.saturation, isStateChange: true) 
     }
 }
 
 def setHue(hue) {
-	def sat = this.device.currentValue("sat") ?: 100
-    def level = this.device.currentValue("level") ?: 100
-	setColor([level:level, saturation:sat, hue:hue])
+	def sat = this.device.currentValue("saturation") ?: 100
+//    def level = this.device.currentValue("level") ?: 100
+	setColor([saturation:sat, hue:hue])
 }
 
 def setSaturation(sat) {
 	def hue = this.device.currentValue("hue") ?: 70
-    def level = this.device.currentValue("level") ?: 100
-	setColor([level:level, saturation:sat, hue:hue])
+//    def level = this.device.currentValue("level") ?: 100
+	setColor([saturation:sat, hue:hue])
 }
+
+def setHueUsing100(hue) {
+	if (hue > 100) { hue = 100 }
+    if (hue < 0) { hue = 0 }
+	def sat = this.device.currentValue("saturation") ?: 100
+//    def level = this.device.currentValue("level") ?: 100
+	setColor([saturation:sat, hue:hue])
+}
+
 
 /**
  * capability.colorTemperature 
@@ -357,7 +406,7 @@ def reset() {
 	log.debug "Resetting color."
 //    sendEvent(name: "hue", value: 23, displayed, false)
 //    sendEvent(name: "sat", value: 56, displayed, false, isStateChange: true)
-    def value = [level:100, sat:56, hue:23]
+    def value = [level:100, saturation:56, hue:23]
     setColor(value)
 }
 
@@ -400,8 +449,8 @@ def flash_off() {
 /**
  * Update Status
  **/
-def updateStatus(action, param, val) {
-	log.debug "updating status: ${param}:${val}"
+private updateStatus(action, param, val) {
+	log.debug "Receiving Bulb state from Hue Hub: ${param}:${val}"
 	if (action == "state") {
 		switch(param) {
         	case "on":
@@ -415,16 +464,16 @@ def updateStatus(action, param, val) {
                 }    
                 break
             case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val)) //parent.scaleLevel(val, true, 255))
+            	sendEvent(name: "level", value: parent.scaleLevel(val), isStateChange: true) //parent.scaleLevel(val, true, 255))
                 break
 			case "hue":
-            	sendEvent(name: "hue", value: parent.scaleLevel(val)) //parent.scaleLevel(val, false, 65535))
+            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), isStateChange: true) //parent.scaleLevel(val)) 
                 break
             case "sat":
-            	sendEvent(name: "sat", value: parent.scaleLevel(val)) //parent.scaleLevel(val))
+            	sendEvent(name: "saturation", value: parent.scaleLevel(val), isStateChange: true) //parent.scaleLevel(val))
                 break
 			case "ct": 
-            	sendEvent(name: "colorTemp", value: Math.round(1000000/val))  //Math.round(1000000/val))
+            	sendEvent(name: "colorTemp", value: Math.round(1000000/val), isStateChange: true)  //Math.round(1000000/val))
                 break
             case "xy": 
             	
