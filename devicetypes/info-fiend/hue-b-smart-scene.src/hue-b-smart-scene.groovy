@@ -146,14 +146,13 @@ def setToGroup ( Integer inGroupID = 0) {
 
 }
 
-def setTo2Groups ( group1, group2) {
+def setTo2Groups ( group1, group2 ) {
 	log.debug("setTo2Groups ${this.device.label}: Turning scene on for groups ${group1} , ${group2}!")
 
  	def commandData = parent.getCommandData(this.device.deviceNetworkId)
 	log.debug "setTo2Groups: ${commandData}"
     
 	def sceneID = commandData.deviceId
-//    def groupID = inGroupID ?: 0
 
 	log.debug "${this.device.label}: setTo2Groups: sceneID = ${sceneID} "
     log.debug "${this.device.label}: setTo2Groups: group1 = ${group1} "
@@ -185,7 +184,27 @@ def setTo2Groups ( group1, group2) {
 		])
 	)
 
+
 }
+
+def turnGroupOn(inGroupID) {
+	log.debug "Executing 'turnGroupOn ( ${inGroupID} )'"
+
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+    
+        return new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "/api/${commandData.username}/groups/${inGroupID}/action",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [on: true]
+		])
+
+	parent.doDeviceSync()
+}
+
 
 def quickFix() {
 	log.debug "Turning QuickFix ON (if schedule exists)"
@@ -259,16 +278,16 @@ def updateStatus(type, param, val) {
 	if (type == "scene") {
 		if (param == "lights") {
 
-            sendEvent(name: "lights", value: val, displayed:true, isStateChange: true)
+            sendEvent(name: "lights", value: val, displayed:false, isStateChange: true)
             
         } else if (param == "scheduleId") {
         
            	"log.debug Should be updating scheduleId with value of ${val}"
-           	sendEvent(name: "scheduleId", value: val, displayed:true, isStateChange: true)
+           	sendEvent(name: "scheduleId", value: val, displayed:false, isStateChange: true)
                 
 		} else if (param == "schedule") {
 
-			sendEvent(name: "schedule", value: val, displayed:true, isStateChange: true)
+			sendEvent(name: "schedule", value: val, displayed:false, isStateChange: true)
             
 		} else {                
 

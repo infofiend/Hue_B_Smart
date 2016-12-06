@@ -461,39 +461,39 @@ def updateStatus(action, param, val) {
         	case "on":
             	def onoff
             	if (val == true) {
-                	sendEvent(name: "switch", value: on, isStateChange: true)                	     
+                	sendEvent(name: "switch", value: on, displayed:false, isStateChange: true)                	     
                 
                 } else {
-	            	sendEvent(name: "switch", value: off)
-                	sendEvent(name: "effect", value: "none", isStateChange: true)    
+	            	sendEvent(name: "switch", value: off, displayed:false)
+                	sendEvent(name: "effect", value: "none", displayed:false, isStateChange: true)    
                 }    
                 break
             case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val)) //parent.scaleLevel(val, true, 255))
+            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed:false, isStateChange:true) //parent.scaleLevel(val, true, 255))
 //                parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)
                 break
 			case "hue":
-            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535)) // parent.scaleLevel(val))
+            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed:false, isStateChange:true) // parent.scaleLevel(val))
   //              parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)                
                 break
             case "sat":
-            	sendEvent(name: "saturation", value: parent.scaleLevel(val)) //parent.scaleLevel(val))
+            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed:false, isStateChange:true) //parent.scaleLevel(val))
     //            parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)
                 break
 			case "ct": 
-            	sendEvent(name: "colorTemp", value: Math.round(1000000/val))  //Math.round(1000000/val))
+            	sendEvent(name: "colorTemp", value: Math.round(1000000/val), displayed:false, isStateChange:true)  //Math.round(1000000/val))
                 break
             case "xy": 
             	
                 break    
             case "colormode":
-            	sendEvent(name: "colormode", value: val, isStateChange: true)
+            	sendEvent(name: "colormode", displayed:false, value: val, isStateChange: true)
                 break
             case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, isStateChange: true)
+            	sendEvent(name: "transitionTime", displayed:false, value: val, isStateChange: true)
                 break                
             case "effect":
-            	sendEvent(name: "effect", value: val, isStateChange: true)
+            	sendEvent(name: "effect", value: val, displayed:false, isStateChange: true)
                 break
 			case "lights":
             	sendEvent(name: "lights", value: val, displayed:false, isStateChange: true)

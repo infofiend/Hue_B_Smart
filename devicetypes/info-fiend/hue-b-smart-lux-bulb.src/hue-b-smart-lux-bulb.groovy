@@ -190,7 +190,6 @@ def on() {
 	        body: [on: true, bri: lvl, transitiontime: tt]
 		])
 //	)
-	parent.doDeviceSync()
 }
 
 def off() {
@@ -211,7 +210,6 @@ def off() {
 	        body: [on: false, transitiontime: tt]
 		])
 //	)
-	parent.doDeviceSync()
 }
 
 /** 
@@ -273,18 +271,18 @@ def updateStatus(action, param, val) {
         	case "on":
             	def onoff
             	if (val == true) {
-                	sendEvent(name: "switch", value: on, isStateChange: true)                	     
+                	sendEvent(name: "switch", value: on, displayed:false, isStateChange: true)                	     
                 
                 } else {
-	            	sendEvent(name: "switch", value: off)
-                	sendEvent(name: "alert", value: "none", isStateChange: true)    
+	            	sendEvent(name: "switch", value: off, displayed:false)
+                	sendEvent(name: "alert", value: "none", displayed:false, isStateChange: true)    
                 }    
                 break
             case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val)) 
+            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed:false, isStateChange: true) 
                 break
             case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, isStateChange: true)
+            	sendEvent(name: "transitionTime", value: val, displayed:false, isStateChange: true)
                 break                
 /**            case "alert":
             	if (val == "none") {
@@ -295,7 +293,7 @@ def updateStatus(action, param, val) {
                 break
 **/                
 			case "reachable":
-				sendEvent(name: "reachable", value: val, isStateChange: true)
+				sendEvent(name: "reachable", value: val, displayed:false, isStateChange: true)
 				break
 			default: 
 				log.debug("Unhandled parameter: ${param}. Value: ${val}")    

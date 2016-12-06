@@ -273,11 +273,11 @@ def updateStatus(action, param, val) {
         	case "on":
             	def onoff
             	if (val == true) {
-                	sendEvent(name: "switch", value: on, isStateChange: true)                	     
+                	sendEvent(name: "switch", value: on, displayed:false, isStateChange: true)                	     
                 
                 } else {
-	            	sendEvent(name: "switch", value: off)
-                	sendEvent(name: "effect", value: "none", isStateChange: true)    
+	            	sendEvent(name: "switch", value: off, displayed:false)
+                	sendEvent(name: "effect", value: "none", displayed:false, isStateChange: true)    
                 }    
                 break
             case "bri":
@@ -285,7 +285,7 @@ def updateStatus(action, param, val) {
 //                parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)
                 break
             case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, isStateChange: true)
+            	sendEvent(name: "transitionTime", value: val, displayed:false, isStateChange: true)
                 break                
             case "alert":
             	if (val == "none") {

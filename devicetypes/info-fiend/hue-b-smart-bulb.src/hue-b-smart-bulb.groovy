@@ -456,39 +456,39 @@ private updateStatus(action, param, val) {
         	case "on":
             	def onoff
             	if (val == true) {
-                	sendEvent(name: "switch", value: on, isStateChange: true)                	     
+                	sendEvent(name: "switch", value: on, displayed:false, isStateChange: true)                	     
                 
                 } else {
 	            	sendEvent(name: "switch", value: off)
-                	sendEvent(name: "effect", value: "none", isStateChange: true)    
+                	sendEvent(name: "effect", value: "none", displayed:false, isStateChange: true)    
                 }    
                 break
             case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val), isStateChange: true) //parent.scaleLevel(val, true, 255))
+            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed:false, isStateChange: true) //parent.scaleLevel(val, true, 255))
                 break
 			case "hue":
-            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), isStateChange: true) //parent.scaleLevel(val)) 
+            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed:false, isStateChange: true) //parent.scaleLevel(val)) 
                 break
             case "sat":
-            	sendEvent(name: "saturation", value: parent.scaleLevel(val), isStateChange: true) //parent.scaleLevel(val))
+            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed:false, isStateChange: true) //parent.scaleLevel(val))
                 break
 			case "ct": 
-            	sendEvent(name: "colorTemp", value: Math.round(1000000/val), isStateChange: true)  //Math.round(1000000/val))
+            	sendEvent(name: "colorTemp", value: Math.round(1000000/val), displayed:false, isStateChange: true)  //Math.round(1000000/val))
                 break
             case "xy": 
             	
                 break    
 			case "reachable":
-				sendEvent(name: "reachable", value: val, isStateChange: true)
+				sendEvent(name: "reachable", value: val, displayed:false, isStateChange: true)
 				break
             case "colormode":
-            	sendEvent(name: "colormode", value: val, isStateChange: true)
+            	sendEvent(name: "colormode", value: val, displayed:false, isStateChange: true)
                 break
             case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, isStateChange: true)
+            	sendEvent(name: "transitionTime", value: val, displayed:false, isStateChange: true)
                 break
             case "effect":
-            	sendEvent(name: "effect", value: val, isStateChange: true)
+            	sendEvent(name: "effect", value: val, displayed:false, isStateChange: true)
                 break
 /**			case "alert":
             	if (val == "none") {
