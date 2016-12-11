@@ -14,7 +14,7 @@
  *
  *	(beta) version .9
  *	(beta) version .9a - added submitOnChange() to bulb, group, and scene selection pages
- *
+ *  (beta) version .9b - added Hue Ambience bulbs (thanks @tmleafs!); fixed scaleLevel; conformed DTHs 
  *
  */
  
@@ -395,7 +395,22 @@ def chooseBulbs(params) {
 			} catch (grails.validation.ValidationException e) {
             	log.debug "${devId} already created."
 			}    
-	    } else {
+	    }
+		else if (b.type.equalsIgnoreCase("Color Temperature Light")) {
+			 try {
+                    def d = addChildDevice("info_fiend", "Hue B Smart White Ambiance", devId, bridge.value.hub, ["label": b.name])
+				["ct", "bri", "reachable", "on"].each { p ->
+                        		d.updateStatus("state", p, b.state[p])
+                		}
+                d.updateStatus("state", "transitiontime", 4)
+		d.configure()
+                addedBulbs[bulbId] = b
+                availableBulbs.remove(bulbId)
+           		} catch (grails.validation.ValidationException e) {
+                log.debug "${devId} already created."
+            		}
+		}
+		else {
 			try {
             	def d = addChildDevice("info_fiend", "Hue B Smart Bulb", devId, bridge.value.hub, ["label": b.name])
                 ["bri", "sat", "reachable", "hue", "on", "xy", "ct", "effect"].each { p ->
@@ -435,7 +450,7 @@ def chooseBulbs(params) {
     dynamicPage(name:"chooseBulbs", title: "", install: true) {
     	section("") {
         	href(name: "manageBridge", page: "manageBridge", title: "Back to Bridge", description: "", params: [mac: params.mac])
-        }
+	}
     	section("Added Bulbs") {
 			addedBulbs.sort{it.value.name}.each { 
 				def devId = "${params.mac}/BULB${it.key}"
@@ -643,8 +658,8 @@ def chooseGroups(params) {
 
     return dynamicPage(name:"chooseGroups", title: "", install:false, uninstall:false, nextPage: "chooseSchedules") {
 	    section("") { 
-			href(name: "manageBridge", page: "manageBridge", description: "", title: "Back to Bridge", params: [mac: params.mac], submitOnChange: true )
-        }
+        		href(name: "manageBridge", page: "manageBridge", description: "", title: "Back to Bridge", params: [mac: params.mac], submitOnChange: true )
+		}
 	    section("Hue Groups Added to SmartThings") {
 			addedGroups.sort{it.value.name}.each { 
 				def devId = "${params.mac}/GROUP${it.key}"
@@ -1193,7 +1208,13 @@ def itemDiscoveryHandler(evt) {
 					["reachable", "on", "bri"].each { p -> 
    	                	it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
 					}
-           	    } else {
+           	    }
+			else if (type.equalsIgnoreCase("Color Temperature Light")) {
+					 ["bri", "ct", "reachable", "on"].each { p ->
+                            	it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
+                    			}
+		    }
+			else {
 					["reachable", "on", "bri", "hue", "sat", "ct", "xy","effect", "colormode"].each { p -> 
                    		it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])                        
 					}
@@ -1462,12 +1483,20 @@ private String convertHexToIP(hex) {
 }
 
 def scaleLevel(level, fromST = false, max = 254) {
+	log.trace "scaleLevel( ${level}, ${fromST}, ${max} )"
     /* scale level from 0-254 to 0-100 */
+    
     if (fromST) {
         return Math.round( level * max / 100 )
     } else {
-        return Math.round( level * 100 / max )
-    }
+    	if (max == 0) {
+    		return 0
+		} else { 	
+        	return Math.round( level * 100 / max )
+		}
+    }    
+    log.trace "scaleLevel returned ${scaled}."
+    
 }
 
 def parse(desc) {
