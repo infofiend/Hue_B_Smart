@@ -14,6 +14,8 @@
  *
  *	Version 1.0b - fixed icon to single
  * 
+ *	Version 1.1 - Conformed DTH
+ * 
  */
 
 // for the UI
@@ -36,11 +38,13 @@ metadata {
 		command "ttUp"
         command "ttDown"
         command "setTransitionTime"
+        command "sendToHub"
+        command "setLevel"
        
-       	attribute "lights", "STRING"       
 		attribute "transitionTime", "NUMBER"
 		attribute "bri", "number"
-		attribute "on", "string"
+        attribute "level", "number"
+        attribute "on", "string"
         attribute "reachable", "string"
         attribute "hueID", "string"
         attribute "host", "string"
@@ -54,20 +58,17 @@ metadata {
 	tiles (scale: 2){
 		multiAttributeTile(name:"rich-control", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00FFFF", nextState:"turningOff"
-				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00FFFF", nextState:"turningOff"
-				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"turningOn"
-			}
-            
-            
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#C6C7CC", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#00A0DC", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#C6C7CC", nextState:"turningOn"
+			}                       
 			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
-            }
-
-			
+            }			
 		}
 
+		/* reset / refresh */	
 		standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"Reset", action:"reset", icon:"st.lights.philips.hue-multi"
 		}
@@ -125,33 +126,28 @@ def parse(String description) {
 
 
 def ttUp() {
-	def tt = this.device.currentValue("transitionTime") ?: 0
-
-    log.debug "ttup ${tt}"
+	log.trace "Hue B Smart Lux Bulb: ttUp(): "
+    def tt = this.device.currentValue("transitionTime") ?: 0
+    if (tt == null) { tt = 4 }
     sendEvent(name: "transitionTime", value: tt + 1)
 }
 
 def ttDown() {
+	log.trace "Hue B Smart Lux Bulb: ttDown(): "
 	def tt = this.device.currentValue("transitionTime") ?: 0
     tt = tt - 1
     if (tt < 0) { tt = 0 }
-    log.debug "ttdown ${tt}"
     sendEvent(name: "transitionTime", value: tt)
 }
-
 
 /** 
  * capability.switchLevel 
  **/
-def setLevel(level) {
-	def lvl = parent.scaleLevel(level, true, 254)
-	log.debug "Setting level to ${lvl}."
-
-    def commandData = parent.getCommandData(device.deviceNetworkId)
-    log.debug "commandData = ${commandData}."
-    
+def setLevel(inLevel) {
+	log.trace "Hue B Smart Lux Bulb: setLevel ( ${inLevel} ): "
+	def level = parent.scaleLevel(inLevel, true, 254)
+    def commandData = parent.getCommandData(device.deviceNetworkId)    
     def tt = this.device.currentValue("transitionTime") ?: 0
-    log.debug "transitionTime = ${tt}."
     
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
@@ -160,25 +156,22 @@ def setLevel(level) {
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        body: [on:true, bri: lvl, transitiontime: tt]
+	        body: [on: true, bri: level, transitiontime: tt]
 		])
 	)    
 }
+
 
 /** 
  * capability.switch
  **/
 def on() {
-	log.debug "Executing 'on'"
+	log.trace "Hue B Smart Lux Bulb: on(): "
 
-    def commandData = parent.getCommandData(device.deviceNetworkId)
-	//log.debug "commandData = ${commandData}."
-    
+    def commandData = parent.getCommandData(device.deviceNetworkId)    
 	def tt = device.currentValue("transitionTime") as Integer ?: 0
-    log.debug "transitionTime = ${tt}."
     def percent = device.currentValue("level") as Integer ?: 100
-    def lvl = parent.scaleLevel(percent, true, 254)
-    log.debug "level = ${lvl}."    
+    def level = parent.scaleLevel(percent, true, 254)
     
         return new physicalgraph.device.HubAction(
     	[
@@ -187,17 +180,15 @@ def on() {
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        body: [on: true, bri: lvl, transitiontime: tt]
+	        body: [on: true, bri: level, transitiontime: tt]
 		])
-//	)
 }
 
 def off() {
-	log.debug "Executing 'off"
+	log.trace "Hue B Smart Lux Bulb: off(): "
+    
     def commandData = parent.getCommandData(device.deviceNetworkId)
-    log.debug "commandData = ${commandData}."
     def tt = device.currentValue("transitionTime") as Integer ?: 0
-    log.debug "transitionTime = ${tt}."
     
     //parent.sendHubCommand(
     return new physicalgraph.device.HubAction(
@@ -216,23 +207,32 @@ def off() {
  * capability.polling
  **/
 def poll() {
-	refresh()
+	log.trace "Hue B Smart Lux Bulb: poll(): "
+    refresh()
 }
 
 /**
  * capability.refresh
  **/
 def refresh() {
-	parent.doDeviceSync()
+	log.trace "Hue B Smart Lux Bulb: refresh(): "
+    parent.doDeviceSync()
     configure()
 }
 
 def reset() {
-    setLevel(75)
+	log.trace "Hue B Smart Lux Bulb: reset(): "
+
+	def value = [level:100, saturation:56, hue:23]
+    sendToHub(value)
 }
 
+/**
+ * capability.alert (flash)
+ **/
+
 def flash() {
-	log.debug "Flashing..."
+	log.trace "Hue B Smart Lux Bulb: flash(): "
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
@@ -249,7 +249,8 @@ def flash() {
 }
 
 def flash_off() {
-	log.debug "Flash off."
+	log.trace "Hue B Smart Lux Bulb: flash_off(): "
+    
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
@@ -264,8 +265,11 @@ def flash_off() {
 }
 
                 
-def updateStatus(action, param, val) {
-	log.debug "Received Lux Bulb status from Hue Hub: ${param}:${val}"
+/**
+ * Update Status
+ **/
+private updateStatus(action, param, val) {
+	log.trace "Hue B Smart Lux Bulb: updateStatus ( ${param}:${val} )"
 	if (action == "state") {
 		switch(param) {
         	case "on":
@@ -284,14 +288,14 @@ def updateStatus(action, param, val) {
             case "transitiontime":
             	sendEvent(name: "transitionTime", value: val, displayed:false, isStateChange: true)
                 break                
-/**            case "alert":
+            case "alert":
             	if (val == "none") {
-            		flash_off() 	//sendEvent(name: "alert", value: val, isStateChange: true)
+            		flash_off() 
                 } else {
                 	flash()
                 }
                 break
-**/                
+                
 			case "reachable":
 				sendEvent(name: "reachable", value: val, displayed:false, isStateChange: true)
 				break
