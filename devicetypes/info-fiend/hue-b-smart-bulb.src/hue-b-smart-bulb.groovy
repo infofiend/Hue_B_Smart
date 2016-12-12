@@ -16,8 +16,14 @@
  * 					and added setHuefrom100 function (for using a number 1-100 in CoRE - instead of the 1-360 that CoRE normally uses)
  *
  *	Version 1.2 -- Conformed DTHs
+ *
+ *	Version 1.2b -- attribute colorTemp is now colorTemperature - changing colorTemperature no longer turns on device
  */
- 
+
+ preferences {
+    input("notiSetting", "enum", title: "Notifications", description: "Level of Notifications for this Device?",
+	    options: ["All", "Only On / Off", "None"] )
+}
  
 metadata {
 	definition (name: "Hue B Smart Bulb", namespace: "info_fiend", author: "Anthony Pastor") {
@@ -50,7 +56,7 @@ metadata {
         command "setLevel"
         command "setColorTemperature"
 
- 		attribute "colorTemp", "number"
+ 		attribute "colorTemperature", "number"
 		attribute "bri", "number"
 		attribute "saturation", "number"
         attribute "level", "number"
@@ -109,10 +115,10 @@ metadata {
         
         
         /* Color Temperature */
-		valueTile("valueCT", "device.colorTemp", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-			state "colorTemp", label: 'Color Temp:  ${currentValue}'
+		valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "colorTemperature", label: 'Color Temp:  ${currentValue}'
         }
-        controlTile("colorTemp", "device.colorTemp", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
+        controlTile("colorTemperature", "device.colorTemperature", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
         	state "setCT", action:"setColorTemperature"
 		}
         
@@ -171,12 +177,41 @@ def parse(String description) {
 	log.debug "Parsing '${description}'"
 }
 
+
+def installed() {
+	log.debug "Installed with settings: ${settings}"
+	initialize()
+}
+
+def updated() {
+	log.debug "Updated with settings: ${settings}"
+	
+	initialize()
+}
+
+def initialize() {
+	state.notiSetting1 = true
+    state.notiSetting2 = true
+    log.trace "Initialize(): notiSetting is ${notiSetting}"
+	if (notiSetting == "All" ) {
+    
+    } else if (notiSetting == "Only On / Off" ) {
+   		state.notiSetting2 = false
+
+	} else if (notiSetting == "None" ) {
+		state.notiSetting1 = false
+	    state.notiSetting2 = false
+    }    
+    log.debug "state.notiSetting1 = ${state.notiSetting1}"
+    log.debug "state.notiSetting2 = ${state.notiSetting2}"    
+}
+
 def ttUp() {
 	log.trace "Hue B Smart Bulb: ttUp(): "
     def tt = this.device.currentValue("transitionTime") ?: 0
     if (tt == null) { tt = 4 }
     log.debug "ttup ${tt}"
-    sendEvent(name: "transitionTime", value: tt + 1)
+    sendEvent(name: "transitionTime", value: tt + 1, displayed: state.notiSetting2)
 }
 
 def ttDown() {
@@ -184,7 +219,7 @@ def ttDown() {
 	def tt = this.device.currentValue("transitionTime") ?: 0
     tt = tt - 1
     if (tt < 0) { tt = 0 }
-    sendEvent(name: "transitionTime", value: tt)
+    sendEvent(name: "transitionTime", value: tt, displayed: state.notiSetting2)
 }
 
 /** 
@@ -263,9 +298,9 @@ def sendToHub(values) {
 			])
 		)
         
-		sendEvent(name: "colormode", value: "XY", isStateChange: true) 
-        sendEvent(name: "hue", value: values.hue as Integer) 
-        sendEvent(name: "saturation", value: values.saturation as Integer, isStateChange: true) 
+		sendEvent(name: "colormode", value: "XY", displayed: state.notiSetting2, isStateChange: true) 
+        sendEvent(name: "hue", value: values.hue as Integer, displayed: state.notiSetting2) 
+        sendEvent(name: "saturation", value: values.saturation as Integer, displayed: state.notiSetting2, isStateChange: true) 
         
 	} else {
     
@@ -289,9 +324,9 @@ def sendToHub(values) {
 		        body: sendBody 
 			])
 		)    
-		sendEvent(name: "colormode", value: "HS") //, isStateChange: true) 
-        sendEvent(name: "hue", value: values.hue) //, isStateChange: true) 
-        sendEvent(name: "saturation", value: values.saturation, isStateChange: true) 
+		sendEvent(name: "colormode", value: "HS", displayed: state.notiSetting2) //, isStateChange: true) 
+        sendEvent(name: "hue", value: values.hue, displayed: state.notiSetting2) //, isStateChange: true) 
+        sendEvent(name: "saturation", value: values.saturation, displayed: state.notiSetting2, isStateChange: true) 
     }
 }
 
@@ -326,7 +361,7 @@ def setHueUsing100(inHue) {
 def setColorTemperature(inCT) {
 	log.trace "Hue B Smart Bulb: setColorTemperature ( ${inCT} ): "
     
-    def colorTemp = inCT ?: this.device.currentValue("colorTemp")
+    def colorTemp = inCT ?: this.device.currentValue("colorTemperature")
     colorTemp = Math.round(1000000/colorTemp)
     
 	def commandData = parent.getCommandData(device.deviceNetworkId)
@@ -342,7 +377,7 @@ def setColorTemperature(inCT) {
 	        body: [on:true, ct: colorTemp, transitiontime: tt]
 		])
 	)
-    sendEvent(name: "colormode", value: "CT", isStateChange: true) 
+    sendEvent(name: "colormode", value: "CT", displayed: state.notiSetting2, isStateChange: true) 
 }
 
 /** 
@@ -454,43 +489,45 @@ def flash_off() {
 private updateStatus(action, param, val) {
 	log.trace "Hue B Smart Bulb: updateStatus ( ${param}:${val} )"
 	if (action == "state") {
+    	def onoffNotice = state.notisetting1
+    	def otherNotice = state.notisetting2        
 		switch(param) {
         	case "on":
             	def onoff
             	if (val == true) {
-                	sendEvent(name: "switch", value: on, displayed:false, isStateChange: true)                	     
+                	sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
                 
                 } else {
-	            	sendEvent(name: "switch", value: off)
-                	sendEvent(name: "effect", value: "none", displayed:false, isStateChange: true)    
+	            	sendEvent(name: "switch", value: off, displayed: onoffNotice)
+                	sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)    
                 }    
                 break
             case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed:false, isStateChange: true) 
+            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed: otherNotice, isStateChange: true) 
                 break
 			case "hue":
-            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed:false, isStateChange: true) 
+            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed: otherNotice, isStateChange: true) 
                 break
             case "sat":
-            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed:false, isStateChange: true) //parent.scaleLevel(val))
+            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed: otherNotice, isStateChange: true) //parent.scaleLevel(val))
                 break
 			case "ct": 
-            	sendEvent(name: "colorTemp", value: Math.round(1000000/val), displayed:false, isStateChange: true)  //Math.round(1000000/val))
+            	sendEvent(name: "colorTemperature", value: Math.round(1000000/val), displayed: otherNotice, isStateChange: true)  //Math.round(1000000/val))
                 break
             case "xy": 
             	
                 break    
 			case "reachable":
-				sendEvent(name: "reachable", value: val, displayed:false, isStateChange: true)
+				sendEvent(name: "reachable", value: val, displayed: otherNotice, isStateChange: true)
 				break
             case "colormode":
-            	sendEvent(name: "colormode", value: val, displayed:false, isStateChange: true)
+            	sendEvent(name: "colormode", value: val, displayed: otherNotice, isStateChange: true)
                 break
             case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, displayed:false, isStateChange: true)
+            	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
                 break
             case "effect":
-            	sendEvent(name: "effect", value: val, displayed:false, isStateChange: true)
+            	sendEvent(name: "effect", value: val, displayed: otherNotice, isStateChange: true)
                 break
  
 			default: 

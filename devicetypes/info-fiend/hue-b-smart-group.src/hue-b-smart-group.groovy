@@ -17,7 +17,8 @@
  * 					and added setHuefrom100 function (for using a number 1-100 in CoRE - instead of the 1-360 that CoRE normally uses)
  * 
  *	Version 1.2 -- conformed DTHs
- * 
+ *
+ *	Version 1.2b -- Fixed updateStatus() error; attribute colorTemp is now colorTemperature - changing colorTemperature no longer turns on device
  */
  
  
@@ -55,7 +56,7 @@ metadata {
         
         attribute "lights", "STRING"       
 		attribute "transitionTime", "NUMBER"
-        attribute "colorTemp", "number"
+        attribute "colorTemperature", "number"
 		attribute "bri", "number"
 		attribute "saturation", "number"
 		attribute "hue", "number"
@@ -75,7 +76,7 @@ metadata {
 	tiles (scale: 2){
 		multiAttributeTile(name:"rich-control", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-multi", backgroundColor:"#00FFFF", nextState:"turningOff"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-multi", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-multi", backgroundColor:"#C6C7CC", nextState:"turningOn"
 				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-multi", backgroundColor:"#00A0DC", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-multi", backgroundColor:"#C6C7CC", nextState:"turningOn"
@@ -114,10 +115,10 @@ metadata {
 		}
         
         /* Color Temperature */
-		valueTile("valueCT", "device.colorTemp", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-			state "colorTemp", label: 'Color Temp:  ${currentValue}'
+		valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "colorTemperature", label: 'Color Temp:  ${currentValue}'
         }
-        controlTile("colorTemp", "device.colorTemp", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
+        controlTile("colorTemperature", "device.colorTemperature", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
         	state "setCT", action:"setColorTemperature"
 		}
         
@@ -163,7 +164,7 @@ metadata {
 		}
 	}
 	main(["rich-control"])
-	details(["rich-control","colormode","groupID","valueHue","hue","valueSat","saturation","valueCT","colorTemp","ttlabel","ttdown","ttup","lights","toggleColorloop","flash","reset","refresh"]) //  "host", "username", 
+	details(["rich-control","colormode","groupID","valueHue","hue","valueSat","saturation","valueCT","colorTemperature","ttlabel","ttdown","ttup","lights","toggleColorloop","flash","reset","refresh"]) //  "host", "username", 
 }
 
 private configure() {		
@@ -243,8 +244,10 @@ def sendToHub(values) {
 
 	if (values.switch == "off" ) {
     	sendBody["on"] = false
+       
     } else if (values.switch == "on") {
 		sendBody["on"] = true
+       
 	}
         
     sendBody["transitiontime"] = device.currentValue("transitionTime") as Integer ?: 0
@@ -299,15 +302,15 @@ def sendToHub(values) {
 			])
 		)    
 		sendEvent(name: "colormode", value: "HS") //, isStateChange: true) 
-        sendEvent(name: "hue", value: values.hue) //, isStateChange: true) 
+ //       sendEvent(name: "switch", value: values.switch)
+        sendEvent(name: "hue", value: values.hue)//, isStateChange: true) 
         sendEvent(name: "saturation", value: values.saturation, isStateChange: true) 
     }
 }
 
 def setHue(inHue) {
 	log.debug "Hue B Smart Group: setHue( ${inHue} )."
-    
-	def sat = this.device.currentValue("saturation") ?: 100
+    def sat = this.device.currentValue("saturation") ?: 100
 	sendToHub([saturation:sat, hue:inHue])
 }
 
@@ -334,7 +337,7 @@ def setHueUsing100(inHue) {
 def setColorTemperature(inCT) {
 	log.trace "Hue B Smart Group: setColorTemperature ( ${inCT} ): "
     
-    def colorTemp = inCT ?: this.device.currentValue("colorTemp")
+    def colorTemp = inCT ?: this.device.currentValue("colorTemperature")
     colorTemp = Math.round(1000000/colorTemp)
     
 	def commandData = parent.getCommandData(device.deviceNetworkId)
@@ -348,7 +351,7 @@ def setColorTemperature(inCT) {
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        body: [on:true, ct: colorTemp, transitiontime: tt]
+	        body: [ct: colorTemp, transitiontime: tt]	//on:true, 
 		])
 	)
     sendEvent(name: "colormode", value: "CT", isStateChange: true) 
@@ -374,10 +377,13 @@ def on() {
 			],
 	        body: [on: true, bri: level, transitiontime: tt]
 		])
+     
+    //    sendEvent(name: "switch", value: on, isStateChange: true, displayed: true)
+
 }
 
 def off() {
-	log.trace "Hue B Smart Group: on(): "
+	log.trace "Hue B Smart Group: off(): "
     
     def commandData = parent.getCommandData(device.deviceNetworkId)
     def tt = device.currentValue("transitionTime") as Integer ?: 0
@@ -393,6 +399,8 @@ def off() {
 	        body: [on: false, transitiontime: tt]
 		])
 //	)
+     //   sendEvent(name: "switch", value: off, isStateChange: true, displayed: true)
+
 }
 
 /** 
@@ -462,47 +470,47 @@ def flash_off() {
  **/
 private updateStatus(action, param, val) {
 	log.trace "Hue B Smart Group: updateStatus ( ${param}:${val} )"
-	if (action == "state") {
+	if (action == "action") {
 		switch(param) {
         	case "on":
             	def onoff
             	if (val == true) {
-                	sendEvent(name: "switch", value: on, displayed:false, isStateChange: true)                	     
+                	sendEvent(name: "switch", value: on, displayed:true, isStateChange: true)                	     
                 
                 } else {
 	            	sendEvent(name: "switch", value: off)
-                	sendEvent(name: "effect", value: "none", displayed:false, isStateChange: true)    
+                	sendEvent(name: "effect", value: "none", displayed:true, isStateChange: true)    
                 }    
                 break
             case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed:false, isStateChange:true) //parent.scaleLevel(val, true, 255))
+            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed:true, isStateChange:true) //parent.scaleLevel(val, true, 255))
 //                parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)
                 break
 			case "hue":
-            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed:false, isStateChange:true) // parent.scaleLevel(val))
+            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed:true, isStateChange:true) // parent.scaleLevel(val))
   //              parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)                
                 break
             case "sat":
-            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed:false, isStateChange:true) //parent.scaleLevel(val))
+            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed:true, isStateChange:true) //parent.scaleLevel(val))
     //            parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)
                 break
 			case "ct": 
-            	sendEvent(name: "colorTemp", value: Math.round(1000000/val), displayed:false, isStateChange:true)  //Math.round(1000000/val))
+            	sendEvent(name: "colorTemperature", value: Math.round(1000000/val), displayed:true, isStateChange:true)  //Math.round(1000000/val))
                 break
             case "xy": 
             	
                 break    
             case "colormode":
-            	sendEvent(name: "colormode", displayed:false, value: val, isStateChange: true)
+            	sendEvent(name: "colormode", displayed:true, value: val, isStateChange: true)
                 break
             case "transitiontime":
-            	sendEvent(name: "transitionTime", displayed:false, value: val, isStateChange: true)
+            	sendEvent(name: "transitionTime", displayed:true, value: val, isStateChange: true)
                 break                
             case "effect":
-            	sendEvent(name: "effect", value: val, displayed:false, isStateChange: true)
+            	sendEvent(name: "effect", value: val, displayed:true, isStateChange: true)
                 break
 			case "lights":
-            	sendEvent(name: "lights", value: val, displayed:false, isStateChange: true)
+            	sendEvent(name: "lights", value: val, displayed:true, isStateChange: true)
                 break
             case "scene":
             	log.trace "received scene ${val}"

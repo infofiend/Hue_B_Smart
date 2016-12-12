@@ -16,6 +16,7 @@
  *
  *	Version 1.0 
  *
+ *	Version 1.0b -- attribute colorTemp is now colorTemperature - changing colorTemperature no longer turns on device
  */
  
 metadata {
@@ -34,13 +35,14 @@ metadata {
         command "flash"
         command "flash_off"
         command "setTransitionTime"
+        command "setColorTemperature"        
         command "ttUp"
         command "ttDown"
         command "updateStatus"
 		command "getHextoXY"
         command "sendToHub"
 
- 		attribute "colorTemp", "number"
+ 		attribute "colorTemperature", "number"
 		attribute "bri", "number"
 		attribute "sat", "number"
         attribute "level", "number"
@@ -81,10 +83,10 @@ metadata {
 		}
         
         /* Color Temperature */
-		valueTile("valueCT", "device.colorTemp", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-			state "colorTemp", label: 'Color Temp:  ${currentValue}'
+		valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+			state "colorTemperature", label: 'Color Temp:  ${currentValue}'
         }
-        controlTile("colorTemp", "device.colorTemp", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
+        controlTile("colorTemperature", "device.colorTemperature", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
         	state "setCT", action:"setColorTemperature"
 		}
         
@@ -257,7 +259,7 @@ def setSaturation(inSat) {
 def setColorTemperature(inCT) {
 	log.debug("Hue B Smart Ambience Bulb: setColorTemperature ( ${inCT} )")
     
-    def colorTemp = inCT ?: this.device.currentValue("colorTemp")
+    def colorTemp = inCT ?: this.device.currentValue("colorTemperature")
     colorTemp = Math.round(1000000/colorTemp)    
 	def commandData = parent.getCommandData(device.deviceNetworkId)
     def tt = device.currentValue("transitionTime") as Integer ?: 0
@@ -270,7 +272,7 @@ def setColorTemperature(inCT) {
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        body: [on:true, ct: colorTemp, transitiontime: tt]
+	        body: [ct: colorTemp, transitiontime: tt]
 		])
 	)
 }
@@ -403,7 +405,7 @@ def updateStatus(action, param, val) {
 			    sendEvent(name: "colormode", value: "HS", isStateChange: true)                 
                 break
 			case "ct": 
-            	sendEvent(name: "colorTemp", value: Math.round(1000000/val))  //Math.round(1000000/val))
+            	sendEvent(name: "colorTemperature", value: Math.round(1000000/val))  //Math.round(1000000/val))
                 sendEvent(name: "colormode", value: "CT", isStateChange: true) 
                 break
 			case "reachable":
