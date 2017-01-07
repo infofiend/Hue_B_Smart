@@ -17,6 +17,8 @@
  *	Version 1.0 
  *
  *	Version 1.0b -- attribute colorTemp is now colorTemperature - changing colorTemperature no longer turns on device
+ *
+ *  Version 1.0c -- corrected name of DTH
  */
  
 metadata {
