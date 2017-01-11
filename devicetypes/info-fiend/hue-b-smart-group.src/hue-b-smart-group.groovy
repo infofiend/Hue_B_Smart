@@ -19,6 +19,9 @@
  *	Version 1.2 -- conformed DTHs
  *
  *	Version 1.2b -- Fixed updateStatus() error; attribute colorTemp is now colorTemperature - changing colorTemperature no longer turns on device
+ *
+ *	Version 1.3 -- re-added setColor; hue slider range now 1-100; now always sends xy color values to Hue Hub; Sliders now conform to the colormode; 
+ * 			   	turning colorLoop off now returns to the previous colormode and settings. 
  */
  
  
@@ -47,11 +50,18 @@ metadata {
         command "colorloopOn"
         command "colorloopOff"
         command "getHextoXY"
+        command "colorFromHSB"
+        command "colorFromHex"
+        command "colorFromXY"
+        command "getHSfromRGB"
+        command "pivotRGB"
+        command "revPivotRGB"
         command "setHue"
         command "setHueUsing100"               
         command "setSaturation"
         command "sendToHub"
         command "setLevel"
+        command "setColor"
 
         
         attribute "lights", "STRING"       
@@ -61,7 +71,7 @@ metadata {
 		attribute "saturation", "number"
 		attribute "hue", "number"
 		attribute "on", "string"
-		attribute "colormode", "enum", ["XY", "CT", "HS"]
+		attribute "colormode", "enum", ["XY", "CT", "HS", "LOOP"]
 		attribute "effect", "enum", ["none", "colorloop"]
         attribute "groupID", "string"
         attribute "host", "string"
@@ -103,12 +113,14 @@ metadata {
         /* Hue & Saturation */
 		valueTile("valueHue", "device.hue", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
 			state "hue", label: 'Hue: ${currentValue}'
+            state "-1", label: 'Hue: N/A'            
         }
         controlTile("hue", "device.hue", "slider", inactiveLabel: false,  width: 4, height: 1) { 
-        	state "setHue", action:"setHue"
+        	state "setHue", action:"setHue", range:"(1..100)"
 		}
 		valueTile("valueSat", "device.saturation", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
 			state "saturation", label: 'Sat: ${currentValue}'
+            state "-1", label: 'Sat: N/A'                        
         }
         controlTile("saturation", "device.saturation", "slider", inactiveLabel: false,  width: 4, height: 1) { 
         	state "setSaturation", action:"setSaturation"
@@ -117,6 +129,8 @@ metadata {
         /* Color Temperature */
 		valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
 			state "colorTemperature", label: 'Color Temp:  ${currentValue}'
+            state "-1", label: 'Color Temp: N/A'
+            
         }
         controlTile("colorTemperature", "device.colorTemperature", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
         	state "setCT", action:"setColorTemperature"
@@ -158,8 +172,8 @@ metadata {
         }
 
 		standardTile("toggleColorloop", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "colorloop", label:"On", action:"colorloopOff", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-on.png"
-            state "none", label:"Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-off.png"
+			state "colorloop", label:"Color Loop On", action:"colorloopOff", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-on.png"
+            state "none", label:"Color Loop Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-off.png"
             state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
 	}
@@ -227,34 +241,35 @@ def sendToHub(values) {
 	log.trace "Hue B Smart Group: sendToHub ( ${values} ): "
     
 	def validValues = [:]
-	def commandData = parent.getCommandData(device.deviceNetworkId)       
+	def commandData = parent.getCommandData(device.deviceNetworkId)
+    def sendBody = [:]
 
-        def sendBody = [:]
-
+	def bri
 	if (values.level) {
-    	def bri = values.level 
+    	bri = values.level 
     	validValues.bri = parent.scaleLevel(bri, true, 254)
         sendBody["bri"] = validValues.bri
+        
 		if (values.level > 0) { 
         	sendBody["on"] = true
         } else {
         	sendBody["on"] = false
 		}            
-	}
+	} else {
+    	bri = device.currentValue("level") as Integer ?: 100
+    } 
 
 	if (values.switch == "off" ) {
     	sendBody["on"] = false
-       
     } else if (values.switch == "on") {
 		sendBody["on"] = true
-       
 	}
         
     sendBody["transitiontime"] = device.currentValue("transitionTime") as Integer ?: 0
     
     if (values.hex != null) {
 		if (values.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
-			validValues.xy = getHextoXY(values.hex)
+			validValues.xy = colorFromHex(values.hex)		// getHextoXY(values.hex)
             sendBody["xy"] = validValues.xy
 		} else {
             log.warn "$values.hex is not a valid color"
@@ -275,20 +290,20 @@ def sendToHub(values) {
 	        	body: sendBody 	
 			])
 		)
-		sendEvent(name: "colormode", value: "XY", isStateChange: true) 
-        sendEvent(name: "hue", value: values.hue as Integer) 
-        sendEvent(name: "saturation", value: values.saturation as Integer, isStateChange: true) 
+        
+		sendEvent(name: "colormode", value: "XY", displayed: state.notiSetting2, isStateChange: true) 
+        sendEvent(name: "hue", value: values.hue as Integer, displayed: state.notiSetting2) 
+        sendEvent(name: "saturation", value: values.saturation as Integer, displayed: state.notiSetting2, isStateChange: true)
+        
+        sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
         
 	} else {
-    
-    	log.trace "sendToHub: no XY values, so using Hue & Saturation."
-		def hue = values.hue ?: this.device.currentValue("hue")
-    	validValues.hue = parent.scaleLevel(hue, true, 65535)
-		sendBody["hue"] = validValues.hue
-		def sat = values.saturation ?: this.device.currentValue("saturation")
-	    validValues.saturation = parent.scaleLevel(sat, true, 254)
-		sendBody["sat"] = validValues.saturation
-        
+    	def h = values.hue.toInteger()
+        def s = values.saturation.toInteger()
+    	log.trace "sendToHub: no XY values, so get from Hue & Saturation."
+		validValues.xy = colorFromHSB(h, s, bri) 	//values.hue, values.saturation)		// getHextoXY(values.hex)
+        sendBody["xy"] = validValues.xy
+       
 		log.debug "Sending ${sendBody} "
 
 		parent.sendHubCommand(new physicalgraph.device.HubAction(
@@ -301,23 +316,33 @@ def sendToHub(values) {
 		        body: sendBody 
 			])
 		)    
-		sendEvent(name: "colormode", value: "HS") //, isStateChange: true) 
- //       sendEvent(name: "switch", value: values.switch)
-        sendEvent(name: "hue", value: values.hue)//, isStateChange: true) 
-        sendEvent(name: "saturation", value: values.saturation, isStateChange: true) 
+		sendEvent(name: "colormode", value: "HS", displayed: state.notiSetting2) //, isStateChange: true) 
+        sendEvent(name: "hue", value: values.hue, displayed: state.notiSetting2) //, isStateChange: true) 
+        sendEvent(name: "saturation", value: values.saturation, displayed: state.notiSetting2, isStateChange: true) 
+        
+        sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
     }
 }
+
+def setColor(inValues) {   
+    log.debug "Hue B Smart Group: setColor( ${inValues} )."
+   
+	sendToHub(inValues)
+}	
+
+
 
 def setHue(inHue) {
 	log.debug "Hue B Smart Group: setHue( ${inHue} )."
     def sat = this.device.currentValue("saturation") ?: 100
+    if (sat == -1) { sat = 100 }
 	sendToHub([saturation:sat, hue:inHue])
 }
 
 def setSaturation(inSat) {
-	log.debug "Hue B Smart Group: setSaturation( ${inSat} )."
-    
+	log.debug "Hue B Smart Group: setSaturation( ${inSat} )."    
 	def hue = this.device.currentValue("hue") ?: 70
+    if (hue == -1) { hue = 70 }
 	sendToHub([saturation:inSat, hue:hue])
 }
 
@@ -355,6 +380,8 @@ def setColorTemperature(inCT) {
 		])
 	)
     sendEvent(name: "colormode", value: "CT", isStateChange: true) 
+	sendEvent(name: "hue", value: -1, displayed: false, isStateChange: true)
+    sendEvent(name: "saturation", value: -1, displayed: false, isStateChange: true)
 }
 
 /** 
@@ -537,7 +564,6 @@ void setAdjustedColor(value) {
 	}
 }
 
-def getDeviceType() { return "groups" }
 
 /**
  * capability.colorLoop
@@ -549,8 +575,18 @@ void colorloopOn() {
     def dState = device.latestValue("switch") as String ?: "off"
 	def level = device.currentValue("level") ?: 100
     if (level == 0) { percent = 100}
+	
+    def dMode = device.currentValue("colormode") as String
+    if (dMode == "CT") {
+    	state.returnTemp = device.currentValue("colorTemperature")
+    } else {
+	    state.returnHue = device.currentValue("hue")
+	    state.returnSat = device.currentValue("saturation")        
+    }
+    state.returnMode = dMode
 
     sendEvent(name: "effect", value: "colorloop", isStateChange: true)
+    sendEvent(name: "colormode", value: "LOOP", isStateChange: true)
     
 	def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
@@ -563,6 +599,10 @@ void colorloopOn() {
 	        body: [on:true, effect: "colorloop", transitiontime: tt]
 		])
 	)
+
+    sendEvent(name: "hue", value: -1, displayed: false, isStateChange: true)
+    sendEvent(name: "saturation", value: -1, displayed: false, isStateChange: true)
+    sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
 }
 
 void colorloopOff() {
@@ -581,17 +621,275 @@ void colorloopOff() {
 	        body: [on:true, effect: "none", transitiontime: tt]
 		])
 	)
+    
+    if (state.returnMode == "CT") {
+    	def retCT = state.returnTemp as Integer
+        setColorTemperature(retCT)
+    } else {
+    	def retHue = state.returnHue as Integer
+        def retSat = state.returnSat as Integer
+        setColor(hue: retHue, saturation: retSat)
+    }    
 }
 
 
+
 /**
- * Misc
+ * Color Conversions
  **/
+private colorFromHex(String colorStr) {
+	/**
+     * Gets color data from hex values used by Smartthings' color wheel. 
+     */
+    log.trace "colorFromHex( ${colorStr} ):"
+    
+    def colorData = [colormode: "HEX"]
+    
+// GET HUE & SATURATION DATA   
+    def r = Integer.valueOf( colorStr.substring( 1, 3 ), 16 )
+    def g = Integer.valueOf( colorStr.substring( 3, 5 ), 16 )
+    def b = Integer.valueOf( colorStr.substring( 5, 7 ), 16 )
+
+	def HS = [:]
+    HS = getHSfromRGB(r, g, b) 	
+	
+    def h = HS.hue * 100
+    def s = HS.saturation * 100
+    
+	sendEvent(name: "hue", value: h, isStateChange: true)
+	sendEvent(name: "saturation", value: s, isStateChange: true)
+
+// GET XY DATA   
+    float red, green, blue;
+
+    // Gamma Corrections
+    red = pivotRGB( r / 255 )
+    green = pivotRGB( g / 255 )
+    blue = pivotRGB( b / 255 )
+
+	// Apply wide gamut conversion D65
+    float X = (float) (red * 0.664511 + green * 0.154324 + blue * 0.162028);
+    float Y = (float) (red * 0.283881 + green * 0.668433 + blue * 0.047685);
+    float Z = (float) (red * 0.000088 + green * 0.072310 + blue * 0.986039);
+
+	// Calculate the xy values
+    float x = (X != 0 ? X / (X + Y + Z) : 0);
+    float y = (Y != 0 ? Y / (X + Y + Z) : 0);
+
+	double[] xy = new double[2];
+    xy[0] = x;
+    xy[1] = y;
+	//colorData = [xy: xy]
+
+	log.debug "xy from hex = ${xy} ."
+    return xy;
+}
+
+
+private colorFromHSB (h, s, level) {
+	/**
+     * Gets color data from Hue, Sat, and Brightness(level) slider values .
+     */
+	log.trace "colorFromHSB ( ${h}, ${s}, ${level}):  really h ${h/100*360}, s ${s/100}, v ${level/100}"
+    
+ //   def colorData = [colormode: "HS"]
+    
+// GET RGB DATA       
+	
+    // Ranges are 0-360 for Hue, 0-1 for Sat and Bri
+    def hue = (h * 360 / 100).toInteger()
+    def sat = (s / 100).toInteger()
+    def bri = (level / 100)	//.toInteger()
+//	log.debug "hue = ${hue} / sat = ${sat} / bri = ${bri}"
+    float i = Math.floor(hue / 60) % 6;
+    float f = hue / 60 - Math.floor(hue / 60);
+//	log.debug "i = ${i} / f = ${f} "
+    
+    bri = bri * 255
+    float v = bri //as Integer //.toInteger()
+    float p = (bri * (1 - sat)) //as Integer	// .toInteger();
+    float q = (bri * (1 - f * sat)) //as Integer //.toInteger();
+	float t = (bri * (1 - (1 - f) * sat)) //as Integer //.toInteger();
+
+//	log.debug "v = ${v} / p = ${p} / q = ${q} / t = ${t} "
+    
+	def r, g, b
+    
+    switch(i) {
+    	case 0: 
+        	r = v
+            g = t
+            b = p
+            break;
+        case 1: 
+        	r = q
+            g = v
+            b = p
+            break;
+        case 2: 
+        	r = p
+            g = v
+            b = t
+            break;
+        case 3: 
+        	r = p
+            g = q
+            b = v
+            break;
+        case 4: 
+        	r = t
+            g = p
+            b = v
+            break;
+        case 5: 
+        	r = v
+            g = p
+            b = q
+            break;
+	}
+    
+    r = r * 255
+    g = g * 255
+    b = b * 255
+    
+//	colorData = [R: r, G: g, B: b]
+
+// GET XY DATA	
+    float red, green, blue;
+	
+    // Gamma Corrections
+    red = pivotRGB( r / 255 )
+    log.debug "red = ${red} / r = ${r}"
+    green = pivotRGB( g / 255 )
+    blue = pivotRGB( b / 255 )
+
+	// Apply wide gamut conversion D65
+    float X = (float) (red * 0.664511 + green * 0.154324 + blue * 0.162028);
+    float Y = (float) (red * 0.283881 + green * 0.668433 + blue * 0.047685);
+    float Z = (float) (red * 0.000088 + green * 0.072310 + blue * 0.986039);
+
+	// Calculate the xy values
+    float x = (X != 0 ? X / (X + Y + Z) : 0);
+    float y = (Y != 0 ? Y / (X + Y + Z) : 0);
+
+	double[] xy = new double[2];
+    xy[0] = x as Double;
+    xy[1] = y as Double;
+//	colorData = [xy: xy]
+
+	log.debug "xy from HSB = ${xy[0]} , ${xy[1]} ."
+    return xy;
+    
+}
+
+private colorFromXY(xValue, yValue){
+	/**
+     * Converts color data from xy values
+     */
+    
+    def colorData = [:]
+    
+    // Get Brightness & XYZ values
+	def bri = device.currentValue("level") as Integer ?: 100
+    
+    float x = xValue
+	float y = yValue
+    float z = (float) 1.0 - x - y;
+    float Y = bri; 
+	float X = (Y / y) * x;
+	float Z = (Y / y) * z;
+
+// FIND RGB VALUES
+
+    // Convert to r, g, b using Wide gamut D65 conversion
+    float r =  X * 1.656492f - Y * 0.354851f - Z * 0.255038f;
+	float g = -X * 0.707196f + Y * 1.655397f + Z * 0.036152f;
+	float b =  X * 0.051713f - Y * 0.121364f + Z * 1.011530f;
+                
+	float R, G, B;
+    // Apply Reverse Gamma Corrections
+    red = revPivotRGB( r * 255 )
+    green = revPivotRGB( g * 255 )	
+    blue = revPivotRGB( b * 255 )
+
+	colorData = [red: red, green: green, blue: blue]
+
+	log.debug "RGB colorData = ${colorData}"	
+/**
+	def maxValue = Math.max(r, Math.max(g,b) );
+    r /= maxValue;
+    g /= maxValue;
+    b /= maxValue;
+    r = r * 255; if (r < 0) { r = 255 };
+    g = g * 255; if (g < 0) { g = 255 };
+    b = b * 255; if (b < 0) { b = 255 };
+**/	
+
+// GET HUE & SAT VALUES	
+    def HS = [:]
+    HS = getHSfromRGB(r, g, b) 
+    
+    colorData = [hue: HS.hue, saturation: HS.saturation]
+
+	log.debug "HS from XY = ${colorData} "    
+    return colorData
+}
+
+private getHSfromRGB(r, g, b) {
+	log.trace "getHSfromRGB ( ${r}, ${g}, ${b}):  " 
+    
+    r = r / 255
+    g = g / 255 
+    b = b / 255
+    
+    def max = Math.max( r, Math.max(g, b) )
+    def min = Math.min( r, Math.min(g, b) )
+    
+    def h, s, v = max;
+
+    def d = max - min;
+    s = max == 0 ? 0 : d / max;
+
+    if ( max == min ){
+        h = 0; // achromatic
+    } else {
+        switch (max) {
+            case r: 
+            	h = (g - b) / d + (g < b ? 6 : 0)
+                break;
+            case g: 
+            	h = (b - r) / d + 2
+                break;
+            case b: 
+            	h = (r - g) / d + 4
+                break;
+        }
+        
+        h /= 6;
+    }
+	
+    def colorData = [:]
+    
+    colorData["hue"] = h
+    colorData["saturation"] = s
+    log.debug "colorData = ${colorData} "
+    return colorData
+}
+
+private pivotRGB(double n) {
+	return (n > 0.04045 ? Math.pow((n + 0.055) / 1.055, 2.4) : n / 12.92) * 100.0;
+}
+
+private revPivotRGB(double n) {
+	return (n > 0.0031308 ? (float) (1.0f + 0.055f) * Math.pow(n, (1.0f / 2.4f)) - 0.055 : (float) n * 12.92);
+}    
+
+/**
+* original color conv
+**/
+
+
 private getHextoXY(String colorStr) {
-    // For the hue bulb the corners of the triangle are:
-    // -Red: 0.675, 0.322
-    // -Green: 0.4091, 0.518
-    // -Blue: 0.167, 0.04
 
     def cred = Integer.valueOf( colorStr.substring( 1, 3 ), 16 )
     def cgreen = Integer.valueOf( colorStr.substring( 3, 5 ), 16 )
@@ -637,3 +935,9 @@ private getHextoXY(String colorStr) {
     xy[1] = y;
     return xy;
 }
+
+
+/**
+ * Misc
+ **/
+def getDeviceType() { return "groups" }
