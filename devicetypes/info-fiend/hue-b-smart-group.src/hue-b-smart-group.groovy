@@ -22,8 +22,16 @@
  *
  *	Version 1.3 -- re-added setColor; hue slider range now 1-100; now always sends xy color values to Hue Hub; Sliders now conform to the colormode; 
  * 			   	turning colorLoop off now returns to the previous colormode and settings. 
+ *
+ *	Version 1.3b -- When group is off, adjustments to hue / saturation or colorTemp (WITHOUT a level or switch command) will not be sent to Hue Hub.  Instead, the DTH will save
+ *				those settings and apply if group is then turned on.  
+ *				 -- added notification preferences
  */
- 
+
+preferences {
+    input("notiSetting", "enum", title: "Notifications", description: "Level of Notifications for this Device?",
+	    options: ["All", "Only On / Off", "None"] )
+} 
  
 metadata {
 	definition (name: "Hue B Smart Group", namespace: "info_fiend", author: "Anthony Pastor") {
@@ -194,6 +202,35 @@ def parse(String description) {
 	log.debug "Parsing '${description}'"
 }
 
+def installed() {
+	log.debug "Installed with settings: ${settings}"
+	initialize()
+}
+
+def updated() {
+	log.debug "Updated with settings: ${settings}"
+	
+	initialize()
+}
+
+def initialize() {
+	state.xy = [:]
+    
+    state.notiSetting1 = true
+    state.notiSetting2 = true
+    log.trace "Initialize(): notiSetting is ${notiSetting}"
+	if (notiSetting == "All" ) {
+    
+    } else if (notiSetting == "Only On / Off" ) {
+   		state.notiSetting2 = false
+
+	} else if (notiSetting == "None" ) {
+		state.notiSetting1 = false
+	    state.notiSetting2 = false
+    }    
+    log.debug "state.notiSetting1 = ${state.notiSetting1}"
+    log.debug "state.notiSetting2 = ${state.notiSetting2}"    
+}
 
 def ttUp() {
 	log.trace "Hue B Smart Group: ttUp(): "
@@ -221,6 +258,16 @@ def setLevel(inLevel) {
 
     def commandData = parent.getCommandData(device.deviceNetworkId)
     def tt = this.device.currentValue("transitionTime") ?: 0
+
+    def sendBody = [:]
+    sendBody = ["on": true, "bri": level, "transitiontime": tt]
+    if (state.xy) {
+    	sendBody["xy"] = state.xy 
+        state.xy = [:]
+    } else if (state.ct) {
+    	sendBody["ct"] = state.ct as Integer
+        state.ct = null
+    }
     
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
@@ -229,7 +276,7 @@ def setLevel(inLevel) {
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        body: [on: true, bri: level, transitiontime: tt]
+	        body: sendBody
 		])
 	)    
 }
@@ -267,61 +314,81 @@ def sendToHub(values) {
         
     sendBody["transitiontime"] = device.currentValue("transitionTime") as Integer ?: 0
     
-    if (values.hex != null) {
-		if (values.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
-			validValues.xy = colorFromHex(values.hex)		// getHextoXY(values.hex)
-            sendBody["xy"] = validValues.xy
-		} else {
-            log.warn "$values.hex is not a valid color"
-        }
-	}
-
-    if (validValues.xy) {
+    def isOn = this.device.currentValue("switch")
+    if (values.switch == "on" || values.level || isOn == "on") {
+    	state.xy = [:]
+        state.ct = null
+        
+	    if (values.hex != null) {
+			if (values.hex ==~ /^\#([A-Fa-f0-9]){6}$/) {
+				validValues.xy = colorFromHex(values.hex)		// getHextoXY(values.hex)
+            	sendBody["xy"] = validValues.xy
+			} else {
+    	        log.warn "$values.hex is not a valid color"
+        	}
+		} else if (values.xy) {
+        	validValues.xy = values.xy
+		}
+		
+    	if (validValues.xy ) {
     
-		log.debug "XY value found.  Sending ${sendBody} " 
+			log.debug "XY value found.  Sending ${sendBody} " 
 
-		parent.sendHubCommand(new physicalgraph.device.HubAction(
-    		[
-        		method: "PUT",
-				path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
-		        headers: [
-		        	host: "${commandData.ip}"
-				],
-	        	body: sendBody 	
-			])
-		)
+			parent.sendHubCommand(new physicalgraph.device.HubAction(
+    			[
+        			method: "PUT",
+					path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+		        	headers: [
+			        	host: "${commandData.ip}"
+					],
+	    	    	body: sendBody 	
+				])
+			)
         
-		sendEvent(name: "colormode", value: "XY", displayed: state.notiSetting2, isStateChange: true) 
-        sendEvent(name: "hue", value: values.hue as Integer, displayed: state.notiSetting2) 
-        sendEvent(name: "saturation", value: values.saturation as Integer, displayed: state.notiSetting2, isStateChange: true)
+			sendEvent(name: "colormode", value: "XY", displayed: state.notiSetting2, isStateChange: true) 
+        	sendEvent(name: "hue", value: values.hue as Integer, displayed: state.notiSetting2) 
+	        sendEvent(name: "saturation", value: values.saturation as Integer, displayed: state.notiSetting2, isStateChange: true) 
+
+        	sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
+            
+		} else {
+    		def h = values.hue.toInteger()
+        	def s = values.saturation.toInteger()
+	    	log.trace "sendToHub: no XY values, so get from Hue & Saturation."
+			validValues.xy = colorFromHSB(h, s, bri) 	//values.hue, values.saturation)		// getHextoXY(values.hex)
+        	sendBody["xy"] = validValues.xy
+			log.debug "Sending ${sendBody} "
+
+			parent.sendHubCommand(new physicalgraph.device.HubAction(
+    			[
+    	    		method: "PUT",
+					path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+		        	headers: [
+	    		    	host: "${commandData.ip}"
+					],
+			        body: sendBody 
+				])
+			)    
+			sendEvent(name: "colormode", value: "HS", displayed: state.notiSetting2) //, isStateChange: true) 
+    	    sendEvent(name: "hue", value: values.hue, displayed: state.notiSetting2) //, isStateChange: true) 
+        	sendEvent(name: "saturation", value: values.saturation, displayed: state.notiSetting2, isStateChange: true) 
         
-        sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
-        
+	        sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
+    	   
+    	}
 	} else {
-    	def h = values.hue.toInteger()
-        def s = values.saturation.toInteger()
-    	log.trace "sendToHub: no XY values, so get from Hue & Saturation."
-		validValues.xy = colorFromHSB(h, s, bri) 	//values.hue, values.saturation)		// getHextoXY(values.hex)
-        sendBody["xy"] = validValues.xy
-       
-		log.debug "Sending ${sendBody} "
-
-		parent.sendHubCommand(new physicalgraph.device.HubAction(
-    		[
-    	    	method: "PUT",
-				path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
-	        	headers: [
-	    	    	host: "${commandData.ip}"
-				],
-		        body: sendBody 
-			])
-		)    
-		sendEvent(name: "colormode", value: "HS", displayed: state.notiSetting2) //, isStateChange: true) 
-        sendEvent(name: "hue", value: values.hue, displayed: state.notiSetting2) //, isStateChange: true) 
-        sendEvent(name: "saturation", value: values.saturation, displayed: state.notiSetting2, isStateChange: true) 
-        
-        sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
-    }
+    	if (values.hue && values.saturation) {
+            validValues.xy = colorFromHSB(values.hue, values.saturation, bri)
+          	log.debug "Group off, so saving xy value ${validValues.xy} for later."   
+            state.xy = validValues.xy
+            state.ct = null
+            
+            sendEvent(name: "colormode", value: "HS", displayed: state.notiSetting2) //, isStateChange: true) 
+            sendEvent(name: "hue", value: values.hue, displayed: state.notiSetting2) //, isStateChange: true) 
+        	sendEvent(name: "saturation", value: values.saturation, displayed: state.notiSetting2, isStateChange: true) 
+            sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
+        }    
+    }    
 }
 
 def setColor(inValues) {   
@@ -368,20 +435,33 @@ def setColorTemperature(inCT) {
 	def commandData = parent.getCommandData(device.deviceNetworkId)
     def tt = device.currentValue("transitionTime") as Integer ?: 0
     
+    def isOn = this.device.currentValue("switch")
+    if (isOn == "on") {
+    	
+		parent.sendHubCommand(new physicalgraph.device.HubAction(
+    		[
+        		method: "PUT",
+				path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+		        headers: [
+		        	host: "${commandData.ip}"
+				],
+	        	body: [ct: colorTemp, transitiontime: tt]
+			])
+		)
+
+	state.ct = null
+
+    } else {
+    	state.ct = colorTemp
+	}
+
+	sendEvent(name: "colormode", value: "CT", displayed: state.notiSetting2, isStateChange: true) 
+    sendEvent(name: "hue", value: -1, displayed: false, isStateChange: true)
+   	sendEvent(name: "saturation", value: -1, displayed: false, isStateChange: true)
+    sendEvent(name: "colorTemperature", value: inCT, displayed: otherNotice, isStateChange: true)
     
-	parent.sendHubCommand(new physicalgraph.device.HubAction(
-    	[
-        	method: "PUT",
-			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
-	        headers: [
-	        	host: "${commandData.ip}"
-			],
-	        body: [ct: colorTemp, transitiontime: tt]	//on:true, 
-		])
-	)
-    sendEvent(name: "colormode", value: "CT", isStateChange: true) 
-	sendEvent(name: "hue", value: -1, displayed: false, isStateChange: true)
-    sendEvent(name: "saturation", value: -1, displayed: false, isStateChange: true)
+	state.xy = [:]  
+    
 }
 
 /** 
@@ -395,14 +475,24 @@ def on() {
     def percent = device.currentValue("level") as Integer ?: 100
     def level = parent.scaleLevel(percent, true, 254)
     
-        return new physicalgraph.device.HubAction(
+    def sendBody = [:]
+    sendBody = ["on": true, "bri": level, "transitiontime": tt]
+    if (state.xy) {
+    	sendBody["xy"] = state.xy
+        state.xy = [:]
+    } else if (state.ct) {
+    	sendBody["ct"] = state.ct
+        state.ct = null
+    }
+    
+    return new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
 			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        body: [on: true, bri: level, transitiontime: tt]
+	        body: sendBody
 		])
      
     //    sendEvent(name: "switch", value: on, isStateChange: true, displayed: true)
