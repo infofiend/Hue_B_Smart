@@ -6,9 +6,7 @@ This is a follow-up to my earlier Hue Connect Service Manager called Hue Lights 
 
 Its very fast and responsive (whether controlling a bulb, group, or a scene).  It is a complete overhaul from the HLGS app, so if you are switching from that app, you will unfortunately need to start over.  A PITA, yes, but I'm sure that you'll be very happy with the end result.
 
-**Beta**
-This is a "beta" app only because I haven't finished with some additional functionality.  I'm releasing this version because recently there seems to be a lot of people having trouble with older Hue Connect Service Managers.  
-
+**Installation**
 To install, you will need to import the Hue B Smart app *AND* all of the relevant DTHs into the IDE.  If you only have Hue Color bulbs, then you will need to import (i) the bridge DTH, (ii) the Hue Bulb DTH, (iii) the Hue Group DTH, (iv) and the Hue Scenes DTH.  If you also have Hue Lux bulbs, then you will also need to import (v) the Hue Lux Bulb DTH and (vi) the Hue Lux Group DTH.
 
 This version does not have the ability to create, delete, or modify groups or the ability to create or delete scenes directly.  That functionality will come in version 1.1, along with the ability to incorporate Hue Hub schedules (and maybe more!).  In the meantime, if you need to create / delete groups or scenes, you will need to use either the Philips Hue app or the CLIP API debugger (instructions for the CLIP debugger can be found [here](http://www.developers.meethue.com/documentation/getting-started).  
@@ -24,8 +22,7 @@ In this way, I really don't use the groups themselves at all -- they are just pa
 
 Of course, if I want any scene to work on all of the lights, I just push that Scene's momentary button (scenes, by default, use a Group of "0" - which the Hue Hub interprets as "all lights").
 
-**Chatty IDE**
-One final note - because I'm still working on a few things, the logs for this version will be very "verbose".  I'll remove most of the log information in the next version.
-
 
 Please let me know if you run into any problems, or have any suggestions.  
+
+And, if you feel like making a donation for these community efforts, it would be greatly appreciated: https://www.paypal.me/anthonypastor . Thanks!
