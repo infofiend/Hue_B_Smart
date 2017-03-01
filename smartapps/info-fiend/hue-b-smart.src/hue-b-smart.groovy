@@ -1,7 +1,7 @@
 /**
  *  Hue B Smart
  *
- *  Copyright 2016 Anthony Pastor
+ *  Copyright 2017 Anthony Pastor
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -15,7 +15,10 @@
  *	(beta) version .9
  *	(beta) version .9a - added submitOnChange() to bulb, group, and scene selection pages
  *  (beta) version .9b - added Hue Ambience bulbs (thanks @tmleafs!); fixed scaleLevel; conformed DTHs 
- *
+ *	
+ *	Version 1.0 - Hue Bulb status now IMMEDIATELY reflects Group action (for switch, level, hue, saturation, colorTemperature, and colorMode)
+ *				- changed deviceSync to every 15 mins since Bulbs should not be in correct state.
+ *				- Be sure to update to most current DTHs for Bulbs (1.4), Groups (1.4), and Bridge (1.1)!
  */
  
 definition(
@@ -349,6 +352,62 @@ def deleteBridge(params) {
         }    
     }
 }
+
+// ********
+
+Map bridgesDiscovered() {
+	def vbridges = getVerifiedHueBridges()
+	def map = [:]
+	vbridges.each {
+		def value = "${it.value.name}"
+		def key = "${it.value.mac}"
+		map["${key}"] = value
+	}
+	map
+}
+
+Map bulbsDiscovered() {
+	def bulbs =  getHueBulbs()
+	def bulbmap = [:]
+	if (bulbs instanceof java.util.Map) {
+		bulbs.each {
+			def value = "${it.value.name}"
+			def key = app.id +"/"+ it.value.id
+			bulbmap["${key}"] = value
+		}
+	} else { //backwards compatable
+		bulbs.each {
+			def value = "${it.name}"
+			def key = app.id +"/"+ it.id
+			logg += "$value - $key, "
+			bulbmap["${key}"] = value
+		}
+	}
+	return bulbmap
+}
+
+Map getHueBulbs() {
+	state.bulbs = state.bulbs ?: [:]
+}
+
+
+def convertBulbListToMap() {
+	try {
+		if (state.bulbs instanceof java.util.List) {
+			def map = [:]
+			state.bulbs?.unique {it.id}.each { bulb ->
+				map << ["${bulb.id}":["id":bulb.id, "name":bulb.name, "type": bulb.type, "modelid": bulb.modelid, "hub":bulb.hub, "online": bulb.online]]
+			}
+			state.bulbs = map
+		}
+	}
+	catch(Exception e) {
+		log.error "Caught error attempting to convert bulb list to map: $e"
+	}
+}
+
+
+// ********
 
 def chooseBulbs(params) {
 
@@ -1148,7 +1207,8 @@ def initialize() {
     state.scheduleEnabled = [:]
     
 	doDeviceSync()
-	runEvery5Minutes(doDeviceSync)
+	runEvery15Minutes(doDeviceSync)
+    
 
 	state.linked_bridges.each {
         def d = getChildDevice(it.value.mac)
@@ -1208,29 +1268,40 @@ def itemDiscoveryHandler(evt) {
 					["reachable", "on", "bri"].each { p -> 
    	                	it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
 					}
-           	    }
-			else if (type.equalsIgnoreCase("Color Temperature Light")) {
+           	    } else if (type.equalsIgnoreCase("Color Temperature Light")) {
 					 ["bri", "ct", "reachable", "on"].each { p ->
                             	it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
                     			}
-		    }
-			else {
+		    	} else {
 					["reachable", "on", "bri", "hue", "sat", "ct", "xy","effect", "colormode"].each { p -> 
                    		it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])                        
 					}
    	            }
             }
+            
             if (it.deviceNetworkId.contains("GROUP")) {
    	            def groupId = it.deviceNetworkId.split("/")[1] - "GROUP"
            	    def g = bridge.value.groups[groupId]
 				def groupFromBridge = bridge.value.groups[groupId]
-                
-                def gLights = groupFromBridge.lights
-                def test
+                def groupLights = groupFromBridge.lights
+                groupLights = groupLights - "[" - "]"
+                def gLights = groupLights.split(", ") 
+                log.trace "groupLights = ${groupLights}"
+				log.trace "gLights = ${gLights}"
+
 					["on", "bri", "sat", "ct", "xy", "effect", "hue", "colormode"].each { p -> 
-       	            	test = bridge.value.groups[groupId].action[p]
                    	    it.updateStatus("action", p, bridge.value.groups[groupId].action[p])                        
-        			}	
+        			}
+                if (bridge.value.groups[groupId].lights) {	
+					it.updateStatus("action", "lights", bridge.value.groups[groupId].lights)
+                    gLights.each { gl ->
+                    	def lightDNI = "${mac}/BULB${gl}"	//.deviceNetworkId	
+                        log.trace "lightDNI = ${lightDNI}"
+						["on", "bri", "sat", "ct", "xy", "effect", "hue", "colormode"].each { p -> 
+	                   	    lightDNI.updateStatus("state", p, bridge.value.groups[groupId].action[p])                        
+                    	}
+                    }    
+                }    
             }
             
             if (it.deviceNetworkId.contains("SCENE")) {
@@ -1245,7 +1316,7 @@ def itemDiscoveryHandler(evt) {
                 sceneLights = sceneFromBridge.lights
                 def sceneSchedule = sceneFromBridge.scheduleId
 	            log.trace "bridge.value.scenes[${sceneId}].lights = ${sceneLights}"                    
-				log.trace "bridge.value.scenes[${sceneId}].scheduleId = ${sceneSchedule}"                    
+			//	log.trace "bridge.value.scenes[${sceneId}].scheduleId = ${sceneSchedule}"                    
 
             	if (bridge.value.scenes[sceneId].lights) {	
 					it.updateStatus("scene", "lights", bridge.value.scenes[sceneId].lights)
@@ -1386,6 +1457,58 @@ def getCommandData(id) {
     ]
     return result
 }
+
+def getGLightsDNI(groupId) {
+	log.trace "getGLightsDNI( from Group ${groupId} )"
+    def mac = state.mac
+    def bridge = getBridge(mac)
+    def groupLights = bridge.value.groups[groupId].lights
+    log.debug "bridge.value.groups[groupId].lights = ${groupLights}"
+    
+    groupLights = groupLights - "[" - "]"
+	def gLights = groupLights 
+    log.debug "gLights = ${gLights}"
+	
+    def gLightDevId
+	def gLightDNI 
+    def gLightsDNI = []
+    
+    gLights.each { gl ->
+    	gLightDevId = "${mac}/BULB${gl}"
+        log.debug "Light devId = ${gLightDevId}"
+    	gLightDNI = getChildDevice(gLightDevId)
+        gLightsDNI << gLightDNI
+    }    
+    log.debug "gLightsDNI = ${gLightsDNI}"
+    
+    return gLightsDNI
+}    
+        
+def getSLightsDNI(sceneId) {
+	log.trace "getSLightsDNI( from Scene ${sceneId} )"
+    def mac = state.mac
+    def bridge = getBridge(mac)
+    def sceneLights = bridge.value.scene[sceneId].lights
+    log.debug "bridge.value.scene[sceneId].lights = ${sceneLights}"
+    
+    sceneLights = sceneLights - "[" - "]"
+	def sLights = sceneLights 
+    log.debug "sLights = ${sLights}"
+	
+    def sLightDevId
+	def sLightDNI 
+    def sLightsDNI = []
+    
+    sLights.each { sl ->
+    	sLightDevId = "${mac}/BULB${gl}"
+        log.debug "Light devId = ${sLightDevId}"
+    	sLightDNI = getChildDevice(sLightDevId)
+        sLightsDNI << sLightDNI
+    }    
+    log.debug "sLightsDNI = ${sLightsDNI}"
+    
+    return sLightsDNI
+} 
 
 def curSchEnabled() {
 
