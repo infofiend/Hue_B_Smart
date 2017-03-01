@@ -19,6 +19,8 @@
  *	Version 1.0b -- attribute colorTemp is now colorTemperature - changing colorTemperature no longer turns on device
  *
  *  Version 1.0c -- corrected name of DTH
+ *
+ *  Version 1.1 -- added applyRelax, applyConcentrate, applyReading, and applyEnergize functions 
  */
  
 metadata {
@@ -43,6 +45,10 @@ metadata {
         command "updateStatus"
 		command "getHextoXY"
         command "sendToHub"
+		command "applyRelax"
+        command "applyConcentrate"
+        command "applyReading"
+        command "applyEnergize"
 
  		attribute "colorTemperature", "number"
 		attribute "bri", "number"
@@ -277,6 +283,26 @@ def setColorTemperature(inCT) {
 	        body: [ct: colorTemp, transitiontime: tt]
 		])
 	)
+}
+
+def applyRelax() {
+	log.info "applyRelax"
+	setColorTemperature(2141)
+}
+
+def applyConcentrate() {
+	log.info "applyConcentrate"
+    setColorTemperature(4329)
+}
+
+def applyReading() {
+	log.info "applyReading"
+    setColorTemperature(2890)
+}
+
+def applyEnergize() {
+	log.info "applyEnergize"
+    setColorTemperature(6410)
 }
 
 

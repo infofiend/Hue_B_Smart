@@ -1,7 +1,7 @@
 /**
  *  Hue B Smart Bulb
  *
- *  Copyright 2016 Anthony Pastor
+ *  Copyright 2017 Anthony Pastor
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -24,6 +24,10 @@
  *
  *	Version 1.3b -- When light is off, adjustments to hue / saturation or colorTemp (WITHOUT a level or switch command) will not be sent to Hue Hub.  Instead, the DTH will save
  *				those settings and apply if light is then turned on.  
+ *
+ *  Version 1.4 -- added applyRelax, applyConcentrate, applyReading, and applyEnergize functions 
+ *				-- modified updateStatus
+ *
  */
 
  preferences {
@@ -68,6 +72,11 @@ metadata {
         command "setLevel"
         command "setColor"
         command "setColorTemperature"
+        command "applyRelax"
+        command "applyConcentrate"
+        command "applyReading"
+        command "applyEnergize"
+        
 
  		attribute "colorTemperature", "number"
 		attribute "bri", "number"
@@ -455,6 +464,27 @@ def setColorTemperature(inCT) {
         
 }
 
+def applyRelax() {
+	log.info "applyRelax"
+	setColorTemperature(2141)
+}
+
+def applyConcentrate() {
+	log.info "applyConcentrate"
+    setColorTemperature(4329)
+}
+
+def applyReading() {
+	log.info "applyReading"
+    setColorTemperature(2890)
+}
+
+def applyEnergize() {
+	log.info "applyEnergize"
+    setColorTemperature(6410)
+}
+
+
 /** 
  * capability.switch
  **/
@@ -579,40 +609,67 @@ private updateStatus(action, param, val) {
 		switch(param) {
         	case "on":
             	def onoff
-            	if (val == true) {
-                	sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
+                if (device.currentValue("switch") != val) {
+	            	if (val == true) {
+    	            	sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
                 
-                } else {
-	            	sendEvent(name: "switch", value: off, displayed: onoffNotice)
-                	sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)    
-                }    
+        	        } else {
+	        	    	sendEvent(name: "switch", value: off, displayed: onoffNotice)
+                		sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)    
+                	}    
+                }
                 break
             case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed: otherNotice, isStateChange: true) 
+            	if (device.currentValue("level") != val) {
+	            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed: otherNotice, isStateChange: true) 
+                }
                 break
 			case "hue":
-            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed: otherNotice, isStateChange: true) 
+            	if (device.currentValue("hue") != val) {
+                	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed: otherNotice, isStateChange: true) 
+                }
                 break
             case "sat":
-            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed: otherNotice, isStateChange: true) //parent.scaleLevel(val))
+            	if (device.currentValue("saturation") != val) {
+	            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed: otherNotice, isStateChange: true) //parent.scaleLevel(val))
+                }
                 break
 			case "ct": 
-            	sendEvent(name: "colorTemperature", value: Math.round(1000000/val), displayed: otherNotice, isStateChange: true)  //Math.round(1000000/val))
+            	if (device.currentValue("colorTemperature") != val) {
+	            	sendEvent(name: "colorTemperature", value: Math.round(1000000/val), displayed: otherNotice, isStateChange: true)  //Math.round(1000000/val))
+                }
                 break
             case "xy": 
-            	
+            	def x = val[0]
+                def y = val[1]
+                def colorData = [:]
+                colorData = colorFromXY(x, y)
+                log.debug "colorData from XY = ${colorData}"
+                def newHue = Math.round(colorData.hue * 100) /// 100 
+                def newSat = Math.round(colorData.saturation * 100) // 100
+                log.debug "newHue = ${newHue}, newSat = ${newSat}"
+                sendEvent(name: "hue", value: newHue, displayed: true, isStateChange: true) 	//parent.scaleLevel(val, false, 65535)
+                sendEvent(name: "saturation", value: newSat, displayed: true, isStateChange: true) //parent.scaleLevel(val)
                 break    
 			case "reachable":
-				sendEvent(name: "reachable", value: val, displayed: otherNotice, isStateChange: true)
-				break
+            	if (device.currentValue("reachable") != val) {
+					sendEvent(name: "reachable", value: val, displayed: otherNotice, isStateChange: true)
+				}
+                break
             case "colormode":
-            	sendEvent(name: "colormode", value: val, displayed: otherNotice, isStateChange: true)
+            	if (device.currentValue("colormode") != val) {
+	            	sendEvent(name: "colormode", value: val, displayed: otherNotice, isStateChange: true)
+                }
                 break
             case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
+            	if (device.currentValue("transitionTime") != val) {
+                	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
+                }
                 break
             case "effect":
-            	sendEvent(name: "effect", value: val, displayed: otherNotice, isStateChange: true)
+            	if (device.currentValue("effect") != val) {
+	            	sendEvent(name: "effect", value: val, displayed: otherNotice, isStateChange: true)
+                }
                 break
  
 			default: 
@@ -639,7 +696,7 @@ void setAdjustedColor(value) {
 /**
  * capability.colorLoop
  **/
-void colorloopOn() {
+def colorloopOn() {
     log.debug "Executing 'colorloopOn'"
     def tt = device.currentValue("transitionTime") as Integer ?: 0
     
@@ -677,7 +734,7 @@ void colorloopOn() {
         
 }
 
-void colorloopOff() {
+def colorloopOff() {
     log.debug "Executing 'colorloopOff'"
     def tt = device.currentValue("transitionTime") as Integer ?: 0
     
@@ -878,9 +935,9 @@ private colorFromXY(xValue, yValue){
                 
 	float R, G, B;
     // Apply Reverse Gamma Corrections
-    red = revPivotRGB( r * 255 )
-    green = revPivotRGB( g * 255 )	
-    blue = revPivotRGB( b * 255 )
+    def red = revPivotRGB( r * 255 )
+    def green = revPivotRGB( g * 255 )	
+    def blue = revPivotRGB( b * 255 )
 
 	colorData = [red: red, green: green, blue: blue]
 
