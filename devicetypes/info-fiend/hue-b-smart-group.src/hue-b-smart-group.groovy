@@ -1,7 +1,7 @@
 /**
  *  Hue B Smart Group
  *
- *  Copyright 2017 Anthony Pastor
+ *  Copyright 2016 Anthony Pastor
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -26,10 +26,6 @@
  *	Version 1.3b -- When group is off, adjustments to hue / saturation or colorTemp (WITHOUT a level or switch command) will not be sent to Hue Hub.  Instead, the DTH will save
  *				those settings and apply if group is then turned on.  
  *				 -- added notification preferences
- *
- *  Version 1.4 -- added applyRelax, applyConcentrate, applyReading, and applyEnergize functions 
- *				-- modified updateStatus 
- *
  */
 
 preferences {
@@ -74,10 +70,6 @@ metadata {
         command "sendToHub"
         command "setLevel"
         command "setColor"
-		command "applyRelax"
-        command "applyConcentrate"
-        command "applyReading"
-        command "applyEnergize"
 
         
         attribute "lights", "STRING"       
@@ -189,12 +181,6 @@ metadata {
 
 		standardTile("toggleColorloop", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
 			state "colorloop", label:"Color Loop On", action:"colorloopOff", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-on.png"
-            state "none", label:"Color Loop Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-off.png"
-            state "updating", label:"Working", icon: "st.secondary.secondary"
-		}
-        
-        standardTile("ctPresets", "device.presets", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "relax", label:"Relax", action:"applyReading", nextState: "reading", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-on.png"
             state "none", label:"Color Loop Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-off.png"
             state "updating", label:"Working", icon: "st.secondary.secondary"
 		}
@@ -478,27 +464,6 @@ def setColorTemperature(inCT) {
     
 }
 
-def applyRelax() {
-	log.info "applyRelax"
-	setColorTemperature(2141)
-}
-
-def applyConcentrate() {
-	log.info "applyConcentrate"
-    setColorTemperature(4329)
-}
-
-def applyReading() {
-	log.info "applyReading"
-    setColorTemperature(2890)
-}
-
-def applyEnergize() {
-	log.info "applyEnergize"
-    setColorTemperature(6410)
-}
-
-
 /** 
  * capability.switch
  **/
@@ -621,85 +586,48 @@ def flash_off() {
  * Update Status
  **/
 private updateStatus(action, param, val) {
-//	log.trace "Hue B Smart Group: updateStatus ( ${param}:${val} )"
-//	def updateBulbParams = [:]
+	log.trace "Hue B Smart Group: updateStatus ( ${param}:${val} )"
 	if (action == "action") {
-    	
 		switch(param) {
         	case "on":
             	def onoff
-                if (device.currentValue("switch") != val) {
-	            	if (val == true) {
-    	            	sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
-		                //parent.updateGroupBulbs(this.device.currentValue("lights"), param, val)
-    //                    updateBulbParams["switch"] = val
-                		
-        	        } else {
-	        	    	sendEvent(name: "switch", value: off, displayed: onoffNotice)
-                		sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)
-		                //parent.updateGroupBulbs(this.device.currentValue("lights"), param, val)
-         //               updateBulbParams["switch"] = val
-		                //parent.updateGroupBulbs(this.device.currentValue("lights"), "effect", "none")                        
-           //             updateBulbParams["effect"] = "none"
-                	}    
-                }
+            	if (val == true) {
+                	sendEvent(name: "switch", value: on, displayed:true, isStateChange: true)                	     
+                
+                } else {
+	            	sendEvent(name: "switch", value: off)
+                	sendEvent(name: "effect", value: "none", displayed:true, isStateChange: true)    
+                }    
                 break
             case "bri":
-            	def gLevel = state.level ?: device.currentValue("level")
-                log.debug "Prev Value of level = ${gLevel}."
-                log.debug "New Value of level = ${val}."
-                def gLights = this.device.currentValue("lights")
-            	if (device.currentValue("level") != val) {
-                	log.debug "update needed for level."
-	            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed: true, isStateChange: true) 
-         //           log.debug "Sending update for level to ${gLights}."
-		            //parent.updateGroupBulbs(this.device.currentValue("lights"), param, val)
-         //           updateBulbParams["bri"] = val
-                }
+            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed:true, isStateChange:true) //parent.scaleLevel(val, true, 255))
+//                parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)
                 break
 			case "hue":
-            	if (device.currentValue("hue") != val) {
-                	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed: otherNotice, isStateChange: true) 
-		            //parent.updateGroupBulbs(this.device.currentValue("lights"), param, val)
-         //           updateBulbParams["hue"] = val
-                }
+            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed:true, isStateChange:true) // parent.scaleLevel(val))
+  //              parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)                
                 break
             case "sat":
-            	if (device.currentValue("saturation") != val) {
-	            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed: otherNotice, isStateChange: true) //parent.scaleLevel(val))
-		            //parent.updateGroupBulbs(this.device.currentValue("lights"), param, val)
-         //           updateBulbParams["sat"] = val
-                }
+            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed:true, isStateChange:true) //parent.scaleLevel(val))
+    //            parent.updateGroupBulbs(this.device.currentValue("lights"), "bri", val)
                 break
 			case "ct": 
-            	if (device.currentValue("colorTemperature") != val) {
-	            	sendEvent(name: "colorTemperature", value: Math.round(1000000/val), displayed: otherNotice, isStateChange: true)  //Math.round(1000000/val))
-		            //parent.updateGroupBulbs(this.device.currentValue("lights"), param, val)                    
-           //         updateBulbParams["ct"] = val
-                }
+            	sendEvent(name: "colorTemperature", value: Math.round(1000000/val), displayed:true, isStateChange:true)  //Math.round(1000000/val))
                 break
             case "xy": 
             	
                 break    
             case "colormode":
-            	if (device.currentValue("colormode") != val) {
-	            	sendEvent(name: "colormode", value: val, displayed: otherNotice, isStateChange: true)
-                }
+            	sendEvent(name: "colormode", displayed:true, value: val, isStateChange: true)
                 break
             case "transitiontime":
-            	if (device.currentValue("transitionTime") != val) {
-                	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
-                }
-                break
+            	sendEvent(name: "transitionTime", displayed:true, value: val, isStateChange: true)
+                break                
             case "effect":
-            	if (device.currentValue("effect") != val) {
-	            	sendEvent(name: "effect", value: val, displayed: otherNotice, isStateChange: true)
-                }
+            	sendEvent(name: "effect", value: val, displayed:true, isStateChange: true)
                 break
 			case "lights":
-            	if (device.currentValue("lights") != val) {
-	            	sendEvent(name: "lights", value: val, displayed:true, isStateChange: true)
-                }
+            	sendEvent(name: "lights", value: val, displayed:true, isStateChange: true)
                 break
             case "scene":
             	log.trace "received scene ${val}"
@@ -708,8 +636,6 @@ private updateStatus(action, param, val) {
 				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
         }
     }
- //   log.debug "updateBulbParams = ${updateBulbParams}"
-//    parent.updateGroupBulbs(this.device.currentValue("lights"), param, val)
 }
 
 void setAdjustedColor(value) {
@@ -732,7 +658,7 @@ void setAdjustedColor(value) {
 /**
  * capability.colorLoop
  **/
-def colorloopOn() {
+void colorloopOn() {
     log.debug "Executing 'colorloopOn'"
     def tt = device.currentValue("transitionTime") as Integer ?: 0
     
@@ -769,7 +695,7 @@ def colorloopOn() {
     sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
 }
 
-def colorloopOff() {
+void colorloopOff() {
     log.debug "Executing 'colorloopOff'"
     def tt = device.currentValue("transitionTime") as Integer ?: 0
     
