@@ -232,6 +232,12 @@ def initialize() {
     log.debug "state.notiSetting2 = ${state.notiSetting2}"    
 }
 
+// Added by nswilliams for missing setTransitionTime
+def setTransitionTime(transTime) {
+	log.trace "Hue B Smart Group: setTransitionTime( ${transTime} ): "
+    sendEvent(name: "transitionTime", value: transTime, displayed: state.notiSetting2)
+}
+
 def ttUp() {
 	log.trace "Hue B Smart Group: ttUp(): "
 	def tt = this.device.currentValue("transitionTime") ?: 0
