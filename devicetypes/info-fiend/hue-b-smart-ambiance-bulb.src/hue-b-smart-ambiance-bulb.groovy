@@ -140,6 +140,12 @@ def parse(String description) {
 	log.debug "Parsing '${description}'"
 }
 
+// Added by nswilliams for missing setTransitionTime
+def setTransitionTime(transTime) {
+	log.trace "Hue B Smart Ambience Bulb: setTransitionTime( ${transTime} ): "
+    sendEvent(name: "transitionTime", value: transTime, displayed: state.notiSetting2)
+}
+
 def ttUp() {
 	log.trace "Hue B Smart Ambience Bulb: ttUp(): "
     
@@ -204,8 +210,9 @@ def sendToHub(values) {
     } else if (values.switch == "on") {
 		sendBody["on"] = true
 	}
-        
-    sendBody["transitiontime"] = device.currentValue("transitionTime") as Integer ?: 0
+    
+    if (values.transitionTime) sendBody["transitiontime"] = values.transitionTime as Integer
+    	else sendBody["transitiontime"] = device.currentValue("transitionTime") as Integer ?: 0
     
 	if (values.hue || values.saturation ) {
 		def hue = values.hue ?: this.device.currentValue("hue")

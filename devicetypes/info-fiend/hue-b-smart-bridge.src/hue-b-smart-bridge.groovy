@@ -261,4 +261,3 @@ def parse(String description) {
     state.limitation = "none"
 	return []
 }
-
