@@ -210,8 +210,9 @@ def sendToHub(values) {
     } else if (values.switch == "on") {
 		sendBody["on"] = true
 	}
-        
-    sendBody["transitiontime"] = device.currentValue("transitionTime") as Integer ?: 0
+    
+    if (values.transitionTime) sendBody["transitiontime"] = values.transitionTime as Integer
+    	else sendBody["transitiontime"] = device.currentValue("transitionTime") as Integer ?: 0
     
 	if (values.hue || values.saturation ) {
 		def hue = values.hue ?: this.device.currentValue("hue")
