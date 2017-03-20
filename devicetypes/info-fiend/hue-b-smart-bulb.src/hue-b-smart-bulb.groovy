@@ -224,6 +224,11 @@ def initialize() {
     log.debug "state.notiSetting2 = ${state.notiSetting2}"    
 }
 
+def setTransitionTime(transTime) {
+	log.trace "Hue B Smart Bulb: setTransitionTime( ${transTime} ): "
+    sendEvent(name: "transitionTime", value: transTime, displayed: state.notiSetting2)
+}
+
 def ttUp() {
 	log.trace "Hue B Smart Bulb: ttUp(): "
     def tt = this.device.currentValue("transitionTime") ?: 0
@@ -1013,4 +1018,3 @@ private getHextoXY(String colorStr) {
 
 
 def getDeviceType() { return "lights" }
-

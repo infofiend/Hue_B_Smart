@@ -148,6 +148,11 @@ def parse(String description) {
 	log.debug "Parsing '${description}'"
 }
 
+def setTransitionTime(transTime) {
+	log.trace "Hue B Smart White Ambience Bulb: setTransitionTime( ${transTime} ): "
+    sendEvent(name: "transitionTime", value: transTime, displayed: state.notiSetting2)
+}
+
 def ttUp() {
 	log.trace "Hue B Smart Ambience Bulb: ttUp(): "
     

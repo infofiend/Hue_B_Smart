@@ -140,6 +140,11 @@ def parse(String description) {
 	log.debug "Parsing '${description}'"
 }
 
+def setTransitionTime(transTime) {
+	log.trace "Hue B Smart Ambience Bulb: setTransitionTime( ${transTime} ): "
+    sendEvent(name: "transitionTime", value: transTime, displayed: state.notiSetting2)
+}
+
 def ttUp() {
 	log.trace "Hue B Smart Ambience Bulb: ttUp(): "
     
@@ -204,7 +209,7 @@ def sendToHub(values) {
     } else if (values.switch == "on") {
 		sendBody["on"] = true
 	}
-        
+    
     sendBody["transitiontime"] = device.currentValue("transitionTime") as Integer ?: 0
     
 	if (values.hue || values.saturation ) {
