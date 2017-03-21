@@ -86,10 +86,10 @@ metadata {
 		valueTile("ttlabel", "transitionTime", decoration: "flat", width: 2, height: 1) {
 			state "default", label:'Transition: ${currentValue}00ms     '
 		}
-		valueTile("ttdown", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
+		standardTile("ttdown", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
 			state "default", label: "Transition -", action:"ttDown"
 		}
-		valueTile("ttup", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
+		standardTile("ttup", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
 			state "default", label:"Transition +", action:"ttUp"
 		}
         

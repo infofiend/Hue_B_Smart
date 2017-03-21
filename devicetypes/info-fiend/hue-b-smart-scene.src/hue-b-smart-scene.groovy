@@ -29,7 +29,8 @@ metadata {
         command "updateStatus"
         command "applySchedule"
         command "quickFix"
-        command "noFix"        
+        command "noFix"   
+        command "refresh"   
         
         attribute "getSceneID", "STRING"        
         attribute "lights", "STRING"  
@@ -38,6 +39,7 @@ metadata {
         attribute "host", "string"
         attribute "username", "string"
         attribute "group", "NUMBER"
+        attribute "lightStates", "json_object"  
 	}
 
 	simulator {
@@ -56,7 +58,7 @@ metadata {
 		}
     
 	    standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
 		}
 
     	standardTile("sceneID", "device.sceneID", inactiveLabel: false, decoration: "flat", width: 6, height: 2) { //, defaultState: "State1"
@@ -71,6 +73,10 @@ metadata {
 			state "default", label: 'Lights: ${currentValue}'
         }
         
+        valueTile("lightStates", "device.lightStates", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+			state "default", label: 'lightStates: ${currentValue}'
+        }
+        
         valueTile("scheduleId", "device.scheduleId", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
 			state "scheduleId", label: 'Schedule: ${currentValue} ' //, action:"getScheduleID"
         }
@@ -80,7 +86,7 @@ metadata {
 	    }
         
     main "switch"
-    details (["switch", "lights", "schedule", "scheduleId", "sceneID", "updateScene", "refresh"]) 	// "scheduleId",
+    details (["switch", "lights", "lightStates", "schedule", "scheduleId", "sceneID", "updateScene", "refresh"]) 	// "scheduleId",
 	}
 }
 
@@ -92,6 +98,8 @@ private configure() {
     sendEvent(name: "scheduleId", value: commandData.scheduleId, displayed:true, isStateChange: true)
     sendEvent(name: "host", value: commandData.ip, displayed:false, isStateChange: true)
     sendEvent(name: "username", value: commandData.username, displayed:false, isStateChange: true)
+    sendEvent(name: "lights", value: commandData.lights, displayed:false, isStateChange: true)
+    sendEvent(name: "lightStates", value: commandData.lightStates, displayed:false, isStateChange: true)
 }
 
 // parse events into attributes
@@ -279,6 +287,10 @@ def updateStatus(type, param, val) {
 		if (param == "lights") {
 
             sendEvent(name: "lights", value: val, displayed:false, isStateChange: true)
+        
+        } else if (param == "lightStates") {
+			log.trace "update lightsStates! = ${lightStates}"
+            sendEvent(name: "lightStates", value: val, displayed:true, isStateChange: true)
             
         } else if (param == "scheduleId") {
         
@@ -296,6 +308,10 @@ def updateStatus(type, param, val) {
     }
 }
 
-
+def refresh() {
+	log.trace "refresh(): "
+	parent.doDeviceSync()
+    configure()
+}
 
 def getDeviceType() { return "scenes" }

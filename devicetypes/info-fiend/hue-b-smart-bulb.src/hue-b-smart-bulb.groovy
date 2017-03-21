@@ -68,6 +68,10 @@ metadata {
         command "setLevel"
         command "setColor"
         command "setColorTemperature"
+        command "applyRelax"
+        command "applyConcentrate"
+        command "applyReading"
+        command "applyEnergize"
 
  		attribute "colorTemperature", "number"
 		attribute "bri", "number"
@@ -147,10 +151,10 @@ metadata {
 		valueTile("ttlabel", "transitionTime", decoration: "flat", width: 2, height: 1) {
 			state "default", label:'Transition Time: ${currentValue}00ms'
 		}
-		valueTile("ttdown", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
+		standardTile("ttdown", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
 			state "default", label: "TT -100ms", action:"ttDown"
 		}
-		valueTile("ttup", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
+		standardTile("ttup", "device.transitionTime", decoration: "flat", width: 2, height: 1) {
 			state "default", label:"TT +100ms", action:"ttUp"
 		}
         
@@ -455,6 +459,27 @@ def setColorTemperature(inCT) {
         
 }
 
+def applyRelax() {
+	log.info "applyRelax"
+	setColorTemperature(2141)
+}
+
+def applyConcentrate() {
+	log.info "applyConcentrate"
+    setColorTemperature(4329)
+}
+
+def applyReading() {
+	log.info "applyReading"
+    setColorTemperature(2890)
+}
+
+def applyEnergize() {
+	log.info "applyEnergize"
+    setColorTemperature(6410)
+}
+
+
 /** 
  * capability.switch
  **/
@@ -576,43 +601,123 @@ private updateStatus(action, param, val) {
 	if (action == "state") {
     	def onoffNotice = state.notisetting1
     	def otherNotice = state.notisetting2        
+        def curValue
 		switch(param) {
         	case "on":
-            	def onoff
+            	curValue = device.currentValue("switch")
+                def onoff
             	if (val == true) {
-                	sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
-                
+       	         	if (curValue != on) { 
+                		log.debug "Update Needed: Current Value of switch = false & newValue = ${val}"
+                		sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
+					} else {
+		                log.debug "NO Update Needed for switch."                	
+        	        }
+
                 } else {
-	            	sendEvent(name: "switch", value: off, displayed: onoffNotice)
-                	sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)    
+       	         	if (curValue != off) { 
+                		log.debug "Update Needed: Current Value of switch = true & newValue = ${val}"               	                	                
+		            	sendEvent(name: "switch", value: off, displayed: onoffNotice)
+    	            	sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)    
+					} else {
+		                log.debug "NO Update Needed for switch."                	
+	                }
+
                 }    
                 break
             case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed: otherNotice, isStateChange: true) 
+	            curValue = device.currentValue("level")
+                val = parent.scaleLevel(val)
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of level = ${curValue} & newValue = ${val}" 
+	            	sendEvent(name: "level", value: val, displayed: otherNotice, isStateChange: true) 
+				} else {
+	                log.debug "NO Update Needed for level."                	
+                }
+                
                 break
 			case "hue":
-            	sendEvent(name: "hue", value: parent.scaleLevel(val, false, 65535), displayed: otherNotice, isStateChange: true) 
+            	curValue = device.currentValue("hue")
+                val = parent.scaleLevel(val, false, 65535)
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of hue = ${curValue} & newValue = ${val}" 
+	            	sendEvent(name: "hue", value: val, displayed: otherNotice, isStateChange: true) 
+				} else {
+	                log.debug "NO Update Needed for hue."                	
+                }            	
                 break
             case "sat":
-            	sendEvent(name: "saturation", value: parent.scaleLevel(val), displayed: otherNotice, isStateChange: true) //parent.scaleLevel(val))
+	            curValue = device.currentValue("saturation")
+                val = parent.scaleLevel(val)
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of saturation = ${curValue} & newValue = ${val}" 
+	            	sendEvent(name: "saturation", value: val, displayed: otherNotice, isStateChange: true) 
+				} else {
+	                log.debug "NO Update Needed for saturation."                	
+                }
                 break
 			case "ct": 
-            	sendEvent(name: "colorTemperature", value: Math.round(1000000/val), displayed: otherNotice, isStateChange: true)  //Math.round(1000000/val))
+            	curValue = device.currentValue("colorTemperature")
+                val = Math.round(1000000/val)
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of colorTemperature = ${curValue} & newValue = ${val}" 
+	            	sendEvent(name: "colorTemperature", value: val, displayed: otherNotice, isStateChange: true) 
+				} else {
+	                log.debug "NO Update Needed for colorTemperature."                	
+                }
                 break
             case "xy": 
-            	
+            	def x = val[0]
+                def y = val[1]
+                def colorData = [:]
+                colorData = colorFromXY(x, y)
+                log.debug "colorData from XY = ${colorData}"
+                def newHue = Math.round(colorData.hue * 100) /// 100 
+                def newSat = Math.round(colorData.saturation * 100) // 100
+                log.debug "newHue = ${newHue}, newSat = ${newSat}"
+                sendEvent(name: "hue", value: newHue, displayed: true, isStateChange: true) 	//parent.scaleLevel(val, false, 65535)
+                sendEvent(name: "saturation", value: newSat, displayed: true, isStateChange: true) //parent.scaleLevel(val)
                 break    
 			case "reachable":
-				sendEvent(name: "reachable", value: val, displayed: otherNotice, isStateChange: true)
-				break
+            	if (device.currentValue("reachable") != val) {
+					sendEvent(name: "reachable", value: val, displayed: otherNotice, isStateChange: true)
+				}
+                break   
+			case "reachable":
+				curValue = device.currentValue("reachable")
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of reachable = ${curValue} & newValue = ${val}" 
+	            	sendEvent(name: "reachable", value: val, displayed: otherNotice, isStateChange: true) 
+				} else {
+	                log.debug "NO Update Needed: Current Value of reachable = ${curValue} & newValue = ${val}"                	
+                }				
+                break
             case "colormode":
-            	sendEvent(name: "colormode", value: val, displayed: otherNotice, isStateChange: true)
+            	curValue = device.currentValue("colormode")
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of colormode = ${curValue} & newValue = ${val}" 
+	            	sendEvent(name: "colormode", value: val, displayed: otherNotice, isStateChange: true) 
+				} else {
+	                log.debug "NO Update Needed for colormode."                	
+                }	
                 break
             case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
-                break
+	            curValue = device.currentValue("transitionTime")
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of transitionTime = ${curValue} & newValue = ${val}"                	
+	            	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
+                } else {
+	                log.debug "NO Update Needed for transitionTime."                	
+                }    
+                break                
             case "effect":
-            	sendEvent(name: "effect", value: val, displayed: otherNotice, isStateChange: true)
+            	curValue = device.currentValue("effect")
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of effect = ${curValue} & newValue = ${val}" 
+	            	sendEvent(name: "effect", value: val, displayed: otherNotice, isStateChange: true) 
+				} else {
+	                log.debug "NO Update Needed for effect "                	
+                }
                 break
  
 			default: 
@@ -639,7 +744,7 @@ void setAdjustedColor(value) {
 /**
  * capability.colorLoop
  **/
-void colorloopOn() {
+def colorloopOn() {
     log.debug "Executing 'colorloopOn'"
     def tt = device.currentValue("transitionTime") as Integer ?: 0
     
@@ -677,7 +782,7 @@ void colorloopOn() {
         
 }
 
-void colorloopOff() {
+def colorloopOff() {
     log.debug "Executing 'colorloopOff'"
     def tt = device.currentValue("transitionTime") as Integer ?: 0
     
@@ -878,9 +983,9 @@ private colorFromXY(xValue, yValue){
                 
 	float R, G, B;
     // Apply Reverse Gamma Corrections
-    red = revPivotRGB( r * 255 )
-    green = revPivotRGB( g * 255 )	
-    blue = revPivotRGB( b * 255 )
+    def red = revPivotRGB( r * 255 )
+    def green = revPivotRGB( g * 255 )	
+    def blue = revPivotRGB( b * 255 )
 
 	colorData = [red: red, green: green, blue: blue]
 
