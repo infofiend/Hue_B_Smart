@@ -15,6 +15,7 @@
  *	(beta) version .9
  *	(beta) version .9a - added submitOnChange() to bulb, group, and scene selection pages
  *  (beta) version .9b - added Hue Ambience bulbs (thanks @tmleafs!); fixed scaleLevel; conformed DTHs 
+ *  (beta) version .9c - 3/28/17: changed listing of names from device.name to device.label to conform with recent ST changes
  *
  */
  
@@ -438,7 +439,7 @@ def chooseBulbs(params) {
             availableBulbs[bulbId] = bridge.value.bulbs[bulbId]
 		} catch (physicalgraph.exception.ConflictException e) {
         	log.debug("${devId} still in use.")
-            errorText = "Bulb ${bridge.value.bulbs[bulbId].name} is still in use. Remove from any SmartApps or Dashboards, then try again."
+            errorText = "Bulb ${bridge.value.bulbs[bulbId].label} is still in use. Remove from any SmartApps or Dashboards, then try again."
         }     
     }
     
@@ -500,7 +501,7 @@ def chooseScenes(params) {
          
 		def devId = "${params.mac}/SCENE${sceneId}"
 		try { 
-			def d = addChildDevice("info_fiend", "Hue B Smart Scene", devId, bridge.value.hub, ["label": s.name, "type": "scene", "lights": s.lights, "lightStates": s.lightStates])
+			def d = addChildDevice("info_fiend", "Hue B Smart Scene", devId, bridge.value.hub, ["label": s.label, "type": "scene", "lights": s.lights, "lightStates": s.lightStates])
 //            d.updateStatus("scene", "lights", s.lights )
 //            d.updateStatus("scene", "lightStates", s.lightStates )
             if (d.scheduleId) {
@@ -530,7 +531,7 @@ def chooseScenes(params) {
             availableScenes[sceneId] = bridge.value.scenes[sceneId]
 		} catch (physicalgraph.exception.ConflictException e) {
         	log.debug("${devId} still in use.")
-            errorText = "Scene ${bridge.value.scenes[sceneId].name} is still in use. Remove from any SmartApps or Dashboards, then try again."
+            errorText = "Scene ${bridge.value.scenes[sceneId].label} is still in use. Remove from any SmartApps or Dashboards, then try again."
         }
     }
     
@@ -599,7 +600,7 @@ def chooseGroups(params) {
         
         if (g.action.hue) {
 			try { 
-				def d = addChildDevice("info_fiend", "Hue B Smart Group", devId, bridge.value.hub, ["label": g.name, "type": g.type, "groupType": "Color Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
+				def d = addChildDevice("info_fiend", "Hue B Smart Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Color Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
 	    	    log.debug "adding group ${d}."	//  Are lights assigned? lights = ${g.lights}"     
             	["bri", "sat", "hue", "on", "xy", "ct", "colormode", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
@@ -615,7 +616,7 @@ def chooseGroups(params) {
 	    	}
 		} else {
 			try { 
-				def d = addChildDevice("info_fiend", "Hue B Smart Lux Group", devId, bridge.value.hub, ["label": g.name, "type": g.type, "groupType": "Lux Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
+				def d = addChildDevice("info_fiend", "Hue B Smart Lux Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Lux Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
 	    	    log.debug "adding group ${d}."  // Are lights assigned? lights = ${g.lights}"     
             	["bri", "on", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
@@ -647,7 +648,7 @@ def chooseGroups(params) {
             availableGroups[groupId] = bridge.value.groups[groupId]
 		} catch (physicalgraph.exception.ConflictException e) {
         	log.debug("${devId} still in use.")
-            errorText = "Group ${bridge.value.groups[groupId].name} is still in use. Remove from any SmartApps or Dashboards, then try again."
+            errorText = "Group ${bridge.value.groups[groupId].label} is still in use. Remove from any SmartApps or Dashboards, then try again."
         }
     }
 
