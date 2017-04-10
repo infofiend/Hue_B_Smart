@@ -379,7 +379,7 @@ def chooseBulbs(params) {
 		def devId = "${params.mac}/BULB${bulbId}"
         if (b.type.equalsIgnoreCase("Dimmable light")) {
 			try {
-	            def d = addChildDevice("info_fiend", "Hue B Smart Lux Bulb", devId, bridge.value.hub, ["label": b.name])	
+	            def d = addChildDevice("info_fiend", "Hue B Smart Lux Bulb", devId, bridge.value.hub, ["label": b.label])	
 				["bri", "reachable", "on"].each { p -> 
 					d.updateStatus("state", p, b.state[p])
 				}
@@ -394,7 +394,7 @@ def chooseBulbs(params) {
 	    }
 		else if (b.type.equalsIgnoreCase("Color Temperature Light")) {
 			 try {
-                    def d = addChildDevice("info_fiend", "Hue B Smart White Ambiance", devId, bridge.value.hub, ["label": b.name])
+                    def d = addChildDevice("info_fiend", "Hue B Smart White Ambiance", devId, bridge.value.hub, ["label": b.label])
 				["ct", "bri", "reachable", "on"].each { p ->
                         		d.updateStatus("state", p, b.state[p])
                 		}
@@ -408,7 +408,7 @@ def chooseBulbs(params) {
 		}
 		else {
 			try {
-            	def d = addChildDevice("info_fiend", "Hue B Smart Bulb", devId, bridge.value.hub, ["label": b.name])
+            	def d = addChildDevice("info_fiend", "Hue B Smart Bulb", devId, bridge.value.hub, ["label": b.label])
                 ["bri", "sat", "reachable", "hue", "on", "xy", "ct", "effect"].each { p ->
                 	d.updateStatus("state", p, b.state[p])
                     
