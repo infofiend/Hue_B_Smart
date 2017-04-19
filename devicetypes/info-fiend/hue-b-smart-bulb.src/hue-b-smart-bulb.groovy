@@ -904,7 +904,7 @@ private colorFromHSB (h, s, level) {
 	
     // Ranges are 0-360 for Hue, 0-1 for Sat and Bri
     def hue = (h * 360 / 100).toInteger()
-    def sat = (s / 100).toInteger()
+    def sat = (s / 100)	//.toInteger()
     def bri = (level / 100)	//.toInteger()
 //	log.debug "hue = ${hue} / sat = ${sat} / bri = ${bri}"
     float i = Math.floor(hue / 60) % 6;
