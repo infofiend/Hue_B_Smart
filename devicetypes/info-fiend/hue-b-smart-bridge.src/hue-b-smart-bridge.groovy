@@ -99,7 +99,7 @@ def discoverItems(inItems = null) {
 	def host = state.host
 	def username = state.userName
         
-//	log.debug "*********** ${username} ********"
+	log.debug "*********** ${username} ********"
 	def result 
         
     if (!inItems) {
