@@ -26,6 +26,11 @@
  *	Version 1.3b -- When group is off, adjustments to hue / saturation or colorTemp (WITHOUT a level or switch command) will not be sent to Hue Hub.  Instead, the DTH will save
  *				those settings and apply if group is then turned on.  
  *				 -- added notification preferences
+ *
+ *	Version 1.4 -- Moved scaleLevel from HBS service manager to DTH (less network traffic)
+ *				-- Removed many log entries (log now significantly less chatty)
+ *				-- Fixed rounding error for displayed Hue and Saturation values
+ *
  */
 
 preferences {
@@ -256,7 +261,7 @@ def ttDown() {
  **/
 def setLevel(inLevel) {
 	log.trace "Hue B Smart Group: setLevel ( ${inLevel} ): "
-	def level = parent.scaleLevel(inLevel, true, 254)
+	def level = scaleLevel(inLevel, true, 254)
 	log.debug "Setting level to ${level}."
 
     def commandData = parent.getCommandData(device.deviceNetworkId)
@@ -297,7 +302,7 @@ def sendToHub(values) {
 	def bri
 	if (values.level) {
     	bri = values.level 
-    	validValues.bri = parent.scaleLevel(bri, true, 254)
+    	validValues.bri = scaleLevel(bri, true, 254)
         sendBody["bri"] = validValues.bri
         
 		if (values.level > 0) { 
@@ -496,7 +501,7 @@ def on() {
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	def tt = device.currentValue("transitionTime") as Integer ?: 0
     def percent = device.currentValue("level") as Integer ?: 100
-    def level = parent.scaleLevel(percent, true, 254)
+    def level = scaleLevel(percent, true, 254)
     
     def sendBody = [:]
     sendBody = ["on": true, "bri": level, "transitiontime": tt]
@@ -609,7 +614,7 @@ def flash_off() {
  * Update Status
  **/
 private updateStatus(action, param, val) {
-	log.trace "Hue B Smart Group: updateStatus ( ${param}:${val} )"
+//	log.trace "Hue B Smart Group: updateStatus ( ${param}:${val} )"
 	if (action == "action") {
 		def onoffNotice = state.notisetting1
     	def otherNotice = state.notisetting2        
@@ -623,7 +628,7 @@ private updateStatus(action, param, val) {
                 		log.debug "Update Needed: Current Value of switch = false & newValue = ${val}"
                 		sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
 					} else {
-		                log.debug "NO Update Needed for switch."                	
+		//                log.debug "NO Update Needed for switch."                	
         	        }
 
                 } else {
@@ -632,40 +637,42 @@ private updateStatus(action, param, val) {
 		            	sendEvent(name: "switch", value: off, displayed: onoffNotice)
     	            	sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)    
 					} else {
-		                log.debug "NO Update Needed for switch."                	
+		//                log.debug "NO Update Needed for switch."                	
 	                }
 
                 }    
                 break
             case "bri":
 	            curValue = device.currentValue("level")
-                val = parent.scaleLevel(val)
+                val = scaleLevel(val)
                 if (curValue != val) { 
                		log.debug "Update Needed: Current Value of level = ${curValue} & newValue = ${val}" 
 	            	sendEvent(name: "level", value: val, displayed: otherNotice, isStateChange: true) 
 				} else {
-	                log.debug "NO Update Needed for level."                	
+	//                log.debug "NO Update Needed for level."                	
                 }
                 
                 break
 			case "hue":
             	curValue = device.currentValue("hue")
-                val = parent.scaleLevel(val, false, 65535)
+                val = scaleLevel(val, false, 65535)
+                if (val > 100) { val = 100 }                
                 if (curValue != val) { 
                		log.debug "Update Needed: Current Value of hue = ${curValue} & newValue = ${val}" 
 	            	sendEvent(name: "hue", value: val, displayed: otherNotice, isStateChange: true) 
 				} else {
-	                log.debug "NO Update Needed for hue."                	
+	//                log.debug "NO Update Needed for hue."                	
                 }            	
                 break
             case "sat":
 	            curValue = device.currentValue("saturation")
-                val = parent.scaleLevel(val)
+                val = scaleLevel(val)
+                if (val > 100) { val = 100 }                
                 if (curValue != val) { 
                		log.debug "Update Needed: Current Value of saturation = ${curValue} & newValue = ${val}" 
 	            	sendEvent(name: "saturation", value: val, displayed: otherNotice, isStateChange: true) 
 				} else {
-	                log.debug "NO Update Needed for saturation."                	
+	//                log.debug "NO Update Needed for saturation."                	
                 }
                 break
 			case "ct": 
@@ -675,7 +682,7 @@ private updateStatus(action, param, val) {
                		log.debug "Update Needed: Current Value of colorTemperature = ${curValue} & newValue = ${val}" 
 	            	sendEvent(name: "colorTemperature", value: val, displayed: otherNotice, isStateChange: true) 
 				} else {
-	                log.debug "NO Update Needed for colorTemperature."                	
+	//                log.debug "NO Update Needed for colorTemperature."                	
                 }
                 break
             case "xy": 
@@ -687,7 +694,7 @@ private updateStatus(action, param, val) {
                		log.debug "Update Needed: Current Value of colormode = ${curValue} & newValue = ${val}" 
 	            	sendEvent(name: "colormode", value: val, displayed: otherNotice, isStateChange: true) 
 				} else {
-	                log.debug "NO Update Needed for colormode."                	
+	//                log.debug "NO Update Needed for colormode."                	
                 }	
                 break
             case "transitiontime":
@@ -696,7 +703,7 @@ private updateStatus(action, param, val) {
                		log.debug "Update Needed: Current Value of transitionTime = ${curValue} & newValue = ${val}"                	
 	            	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
                 } else {
-	                log.debug "NO Update Needed for transitionTime."                	
+	//                log.debug "NO Update Needed for transitionTime."                	
                 }    
                 break                
             case "effect":
@@ -705,7 +712,7 @@ private updateStatus(action, param, val) {
                		log.debug "Update Needed: Current Value of effect = ${curValue} & newValue = ${val}" 
 	            	sendEvent(name: "effect", value: val, displayed: otherNotice, isStateChange: true) 
 				} else {
-	                log.debug "NO Update Needed for effect "                	
+	//                log.debug "NO Update Needed for effect "                	
                 }
                 break
 			case "lights":
@@ -714,7 +721,7 @@ private updateStatus(action, param, val) {
                		log.debug "Update Needed: Current Value of lights = ${curValue} & newValue = ${val}" 
 	            	sendEvent(name: "lights", value: val, displayed: otherNotice, isStateChange: true) 
 				} else {
-	                log.debug "NO Update Needed for lights"
+	  //              log.debug "NO Update Needed for lights"
                 }
                 break
             case "scene":
@@ -809,6 +816,28 @@ def colorloopOff() {
         setColor(hue: retHue, saturation: retSat)
     }    
 }
+
+
+/**
+ * scaleLevel
+ **/
+def scaleLevel(level, fromST = false, max = 254) {
+//	log.trace "scaleLevel( ${level}, ${fromST}, ${max} )"
+    /* scale level from 0-254 to 0-100 */
+    
+    if (fromST) {
+        return Math.round( level * max / 100 )
+    } else {
+    	if (max == 0) {
+    		return 0
+		} else { 	
+        	return Math.round( level * 100 / max )
+		}
+    }    
+//    log.trace "scaleLevel returned ${scaled}."
+    
+}
+
 
 
 
