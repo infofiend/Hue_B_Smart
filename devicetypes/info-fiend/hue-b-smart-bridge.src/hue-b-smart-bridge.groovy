@@ -16,6 +16,7 @@
  *	Version 1.1 - added discoverBulbs, discoverGroups, discoverScenes, discoverSchedules, pollItems, pollBulbs, pollGroups, pollScenes, pollSchedules.
  * 				- Changed device to multiAttribute tile; added bridge & health check capability; added status attribute; added device-enroll
  *              - Receipt of successful change to a Group will now cause ST to immediately update status of all bulbs in that group!!!
+ *  Version 1.2 - Fixed problem of devices not loading in HBS smartapp; removed scenes and groups created by new Hue app schedules.
  *
  */
 metadata {
@@ -86,16 +87,22 @@ def updated() {
 }
 
 def initialize() {
-	
+	def commandData = parent.getCommandData(device.deviceNetworkId)
+    log.debug "${commandData = commandData}"
+    sendEvent(name: "idNumber", value: commandData.deviceId, displayed:true, isStateChange: true)
+    sendEvent(name: "networkAddress", value: commandData.ip, displayed:false, isStateChange: true)
+    sendEvent(name: "username", value: commandData.username, displayed:false, isStateChange: true)
     state.host = this.device.currentValue("networkAddress") + ":80"
     state.userName = this.device.currentValue("username")
-    
+    state.initialize = true
 }
 
 
 def discoverItems(inItems = null) {
 	log.trace "Bridge discovering all items on Hue hub."
-
+	
+    if (state.initialize != true ) { initialize() }
+    
 	def host = state.host
 	def username = state.userName
         
@@ -361,17 +368,18 @@ def parse(String description) {
 				state.bulbs = bulbs
 				    
 	            body?.groups?.each { k, v -> 
-                   
-    	            groups[k] = [id: k, label: v.name, type: v.type, action: v.action, all_on: v.state.all_on, any_on: v.state.any_on, lights: v.lights] //, groupLightDevIds: devIdsGLights]
+                	if (v.name != "Custom group for \$lights") {   
+	    	            groups[k] = [id: k, label: v.name, type: v.type, action: v.action, all_on: v.state.all_on, any_on: v.state.any_on, lights: v.lights] //, groupLightDevIds: devIdsGLights]
+					}
 				}
-				
+                
 				state.groups = groups
 				
 	            body.scenes?.each { k, v -> 
 //                   	log.trace "k=${k} and v=${v}"
-                        				
-                  	scenes[k] = [id: k, label: v.name, type: "scene", lights: v.lights]
-                            
+					if (!v.name.startsWith("Scene scene") && !v.name.startsWith("Scene myScene") ) {                        				
+	                  	scenes[k] = [id: k, label: v.name, type: "scene", lights: v.lights]
+    				}                        
 				}
                 
                 state.scenes = scenes
