@@ -17,7 +17,7 @@
  *  (beta) version .9b - added Hue Ambience bulbs (thanks @tmleafs!); fixed scaleLevel; conformed DTHs 
  *  (beta) version .9c - 3/28/17: changed listing of names from device.name to device.label to conform with recent ST changes
  *  (beta) version .9d - 4/19/17: fixed device.name / device.label error
- *
+ *  version 1.0 - 5/2/17: fixed devices not loading 
  */
  
 definition(
@@ -95,7 +95,7 @@ def manageBridge(params) {
 			}
 		}
     } else if (state.inItemDiscovery) {
-        return dynamicPage(name:"manageBridge", title: "Manage bridge ${ip}", refreshInterval: refreshInterval, install: false) {
+        return dynamicPage(name:"manageBridge", title: "Manage bridge ${ip}", refreshInterval: refreshInterval, install: false) {            
             section("Discovering bulbs, scenes, schedules, and groups...") {
 				href(name: "Delete Bridge", page:"deleteBridge", title:"", description:"Delete bridge ${ip} (and devices)", params: [mac: mac])
             }
@@ -171,14 +171,22 @@ def linkButton(params) {
         log.debug("ssdp ${params.ssdpUSN}")
         log.debug("username ${params.username}")
         
+        
         def bridge = getUnlinkedBridges().find{it?.key?.contains(params.ssdpUSN)}
         log.debug("bridge ${bridge}")
-        def d = addChildDevice("info_fiend", "Hue B Smart Bridge", bridge.value.mac, bridge.value.hub, [label: "Hue B Smart Bridge (${params.ip})"])
-		
-        d.sendEvent(name: "networkAddress", value: params.ip)
-        d.sendEvent(name: "serialNumber", value: bridge.value.serialNumber)
-        d.sendEvent(name: "username", value: params.username)
+
 		state.user = params.username
+        state.host = params.ip + ":80"
+        log.debug "state.user = ${state.user} ******************"
+		log.debug "state.host = ${state.host} ******************"
+        log.debug "bridge.value.serialNumber = ${bridge.value.serialNumber} ******************"
+
+        def d = addChildDevice("info_fiend", "Hue B Smart Bridge", bridge.value.mac, bridge.value.hub, [label: "Hue B Smart Bridge (${params.ip}", username: "${params.username}", networkAddress: "${params.ip}", host: "${state.host}"])
+		
+//        d.sendEvent(name: "networkAddress", value: params.ip)
+        d.sendEvent(name: "serialNumber", value: bridge.value.serialNumber)
+//        d.sendEvent(name: "username", value: params.username)
+        
         subscribe(d, "itemDiscovery", itemDiscoveryHandler)
 
         params.linkDone = false
@@ -483,6 +491,8 @@ def chooseScenes(params) {
 		def devId = "${params.mac}/SCENE${it.key}"
         
 		def d = getChildDevice(devId) 
+        log.debug "d = ${d} dddddddddD"
+        
         if (d) {
         	addedScenes << it
         } else {
