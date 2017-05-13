@@ -1,5 +1,5 @@
 /**
- *  Hue B Smart Scene
+ *  Hue B Smart Lux Group
  *
  *  Copyright 2016 Anthony Pastor
  *
@@ -12,306 +12,396 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  version 1.1: added setTo2Groups() - use this function to set scene to two different groups at once 
+ *
+ *	Version 1.1 -- Conformed DTHs
+
  */
+preferences {
+	input("tt", "integer", defaultValue: 4, title: "Time it takes for the lights to transition (default: 4 = 400ms)")
+    input("notiSetting", "enum", title: "Notifications", description: "Level of Notifications for this Device?",
+	    options: ["All", "Only On / Off", "None"] )
+}  
+ 
 metadata {
-	definition (name: "Hue B Smart Scene", namespace: "info_fiend", author: "Anthony Pastor") {
+	definition (name: "Hue B Smart Lux Group", namespace: "info_fiend", author: "Anthony Pastor") {
+		capability "Switch Level"
 		capability "Actuator"
-        capability "Switch"
-        capability "Momentary"
-        capability "Sensor"
+		capability "Switch"
+		capability "Polling"
+		capability "Refresh"
+		capability "Sensor"
         capability "Configuration"
-        
-		command "setToGroup"
-        command "setTo2Groups"        
-        command "updateScene"
-        command	"updateSceneFromDevice"
+                
+        command "reset"
+        command "refresh"
         command "updateStatus"
-        command "applySchedule"
-        command "quickFix"
-        command "noFix"   
-        command "refresh"   
-        
-        attribute "getSceneID", "STRING"        
-        attribute "lights", "STRING"  
-        attribute "sceneID", "string"
-        attribute "scheduleId", "NUMBER"
+        command "flash"
+        command "flash_off"
+        command "sendToHub"
+        command "setLevel"
+        command "scaleLevel"
+                       
+        attribute "lights", "STRING"       
+		attribute "transitionTime", "NUMBER"
+		attribute "bri", "number"
+        attribute "level", "number"
+		attribute "on", "string"
+        attribute "groupID", "string"
         attribute "host", "string"
         attribute "username", "string"
-        attribute "group", "NUMBER"
-        attribute "lightStates", "json_object"  
+        
 	}
 
 	simulator {
 		// TODO: define status and reply messages here
 	}
 
-	tiles (scale: 2) {
-	    multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
+	tiles (scale: 2){
+		multiAttributeTile(name:"rich-control", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#79b821"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-multi", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-multi", backgroundColor:"#ffffff", nextState:"turningOn"
+				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-multi", backgroundColor:"#79b821", nextState:"turningOff"
+				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-multi", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
-		
-//        	tileAttribute ("lights", key: "SECONDARY_CONTROL") {
-//                attributeState "lights", label:'The scene controls Hue lights ${currentValue}.'
-//            }
-		}
-    
-	    standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
-			state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
+            
+            
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
+            }
+
+			
 		}
 
-    	standardTile("sceneID", "device.sceneID", inactiveLabel: false, decoration: "flat", width: 6, height: 2) { //, defaultState: "State1"
-	       	state "sceneID", label: 'SceneID: ${currentValue} ' //, action:"getSceneID" //, backgroundColor:"#BDE5F2" //, nextState: "State2"
-    	}
+		/* reset / refresh */	
+		standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-multi"
+		}
+		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+        
+        /* Flash / Alert */
+		standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
+		}
+        valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+            state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
+        }
 
-		standardTile("updateScene", "device.updateScene", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-    	   	state "Ready", label: 'Update<br>Scene', action:"updateSceneFromDevice", backgroundColor:"#FBB215"
-	    }
-	
- 		valueTile("lights", "device.lights", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-			state "default", label: 'Lights: ${currentValue}'
-        }
-        
-        valueTile("lightStates", "device.lightStates", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-			state "default", label: 'lightStates: ${currentValue}'
-        }
-        
-        valueTile("scheduleId", "device.scheduleId", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
-			state "scheduleId", label: 'Schedule: ${currentValue} ' //, action:"getScheduleID"
-        }
-        valueTile("schedule", "device.schedule",  width: 4, height: 2) {	//decoration: "flat"
-    	   	state "off", label: '.          QFix Off             .', action:"quickFix", backgroundColor:"#BDE5F2" //, nextState: "Enabled"
-            state "on", label: ' .         QFix On              .', action:"noFix", backgroundColor:"#FFA500"//, defaultState: "Disabled"
-	    }
-        
-    main "switch"
-    details (["switch", "lights", "lightStates", "schedule", "scheduleId", "sceneID", "updateScene", "refresh"]) 	// "scheduleId",
 	}
+	main(["rich-control"])
+	details(["rich-control","reset","flash", "refresh", "transitiontime"])
 }
-
 
 private configure() {		
     def commandData = parent.getCommandData(device.deviceNetworkId)
     log.debug "${commandData = commandData}"
-    sendEvent(name: "sceneID", value: commandData.deviceId, displayed:true, isStateChange: true)
-    sendEvent(name: "scheduleId", value: commandData.scheduleId, displayed:true, isStateChange: true)
+    sendEvent(name: "groupID", value: commandData.deviceId, displayed:true, isStateChange: true)
     sendEvent(name: "host", value: commandData.ip, displayed:false, isStateChange: true)
     sendEvent(name: "username", value: commandData.username, displayed:false, isStateChange: true)
-    sendEvent(name: "lights", value: commandData.lights, displayed:false, isStateChange: true)
-    sendEvent(name: "lightStates", value: commandData.lightStates, displayed:false, isStateChange: true)
 }
 
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-	
 }
+
+def installed() {
+	log.debug "Installed with settings: ${settings}"
+	initialize()
+}
+
+def updated(){
+	log.debug "Updated Preferences"
+	sendEvent(name: "transitionTime", value: tt)
+    initialize()
+}
+
+def initialize() {
+	state.xy = [:]
+
+    state.notiSetting1 = true
+    state.notiSetting2 = true
+    log.trace "Initialize(): notiSetting is ${notiSetting}"
+	if (notiSetting == "All" ) {
+    
+    } else if (notiSetting == "Only On / Off" ) {
+   		state.notiSetting2 = false
+
+	} else if (notiSetting == "None" ) {
+		state.notiSetting1 = false
+	    state.notiSetting2 = false
+    }    
+    log.debug "state.notiSetting1 = ${state.notiSetting1}"
+    log.debug "state.notiSetting2 = ${state.notiSetting2}"    
+}
+
+/** 
+ * capability.switchLevel 
+ **/
+def setLevel(inLevel) {
+	log.trace "Hue B Smart Lux Group: setLevel ( ${inLevel} ): "
+	def level = scaleLevel(inLevel, true, 254)
+
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+    def tt = this.device.currentValue("transitionTime") ?: 0
+    
+	parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [on: true, bri: level, transitiontime: tt]
+		])
+	)    
+}
+
 
 /** 
  * capability.switch
  **/
 def on() {
-	push()
-}
-
-def off() {
-
-}
-
-/**
- * capablity.momentary
- **/
-def push() {
-	def theGroup = device.currentValue("group") ?: 0
-    sendEvent(name: "momentary", value: "pushed", isStateChange: true)    
-	setToGroup()
-}
-
-def setToGroup ( Integer inGroupID = 0) {
-	log.debug("setToGroup ${this.device.label}: Turning scene on for group ${inGroupID}!")
-
- 	def commandData = parent.getCommandData(this.device.deviceNetworkId)
-	log.debug "setToGroup: ${commandData}"
-    
-	def sceneID = commandData.deviceId
-//    def groupID = inGroupID ?: 0
-
-	log.debug "${this.device.label}: setToGroup: sceneID = ${sceneID} "
-    log.debug "${this.device.label}: setToGroup: theGroup = ${inGroupID} "
-    String gPath = "/api/${commandData.username}/groups/${inGroupID}/action"
-
-    parent.sendHubCommand(new physicalgraph.device.HubAction(
-    	[
-        	method: "PUT",
-			path: "${gPath}",
-	        headers: [
-	        	host: "${commandData.ip}"
-			],
-	        body: [scene: "${commandData.deviceId}"]
-		])
-	)
-
-}
-
-def setTo2Groups ( group1, group2 ) {
-	log.debug("setTo2Groups ${this.device.label}: Turning scene on for groups ${group1} , ${group2}!")
-
- 	def commandData = parent.getCommandData(this.device.deviceNetworkId)
-	log.debug "setTo2Groups: ${commandData}"
-    
-	def sceneID = commandData.deviceId
-
-	log.debug "${this.device.label}: setTo2Groups: sceneID = ${sceneID} "
-    log.debug "${this.device.label}: setTo2Groups: group1 = ${group1} "
-    
-    String gPath = "/api/${commandData.username}/groups/${group1}/action"
-
-    parent.sendHubCommand(new physicalgraph.device.HubAction(
-    	[
-        	method: "PUT",
-			path: "${gPath}",
-	        headers: [
-	        	host: "${commandData.ip}"
-			],
-	        body: [scene: "${commandData.deviceId}"]
-		])
-	)
-
-    log.debug "${this.device.label}: setTo2Groups: group2 = ${group2} "
-    gPath = "/api/${commandData.username}/groups/${group2}/action"
-
-    parent.sendHubCommand(new physicalgraph.device.HubAction(
-    	[
-        	method: "PUT",
-			path: "${gPath}",
-	        headers: [
-	        	host: "${commandData.ip}"
-			],
-	        body: [scene: "${commandData.deviceId}"]
-		])
-	)
-
-
-}
-
-def turnGroupOn(inGroupID) {
-	log.debug "Executing 'turnGroupOn ( ${inGroupID} )'"
+	log.trace "Hue B Smart Lux Group: on(): "
 
     def commandData = parent.getCommandData(device.deviceNetworkId)
+	def tt = device.currentValue("transitionTime") as Integer ?: 0
+    def percent = device.currentValue("level") as Integer ?: 100
+    def level = scaleLevel(percent, true, 254)
     
         return new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
-			path: "/api/${commandData.username}/groups/${inGroupID}/action",
+			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        body: [on: true]
+	        body: [on: true, bri: level, transitiontime: tt]
 		])
-
-	parent.doDeviceSync()
 }
 
-
-def quickFix() {
-	log.debug "Turning QuickFix ON (if schedule exists)"
-    if (this.device.currentValue("scheduleId")) {
-		def schId = this.device.currentValue("scheduleId")
-        def sceneId = this.device.currentValue("sceneID")   
-    	def devId = this.device.deviceNetworkId
-	    log.debug "sceneId = ${sceneId} & schId = ${schId} s/b ${this.device.currentValue("scheduleId")}"    	    
-		parent.quickFixON(devId, sceneId, schId)
-        
-	} else { 
-    	log.debug "Scene ${sceneId} doesn't have a Hue Hub schedule"
-	    
-	}
-}
-
-def noFix() {
-	log.debug "Turning QuickFix OFF for this scene, if enabled"
-    if (this.device.currentValue("scheduleId")) {
-	    def schId = this.device.currentValue("scheduleId")
-    	def sceneId = this.device.currentValue("sceneID")    
-		parent.noFix(this.device.deviceNetworkId, sceneId, schId)
-	} else { 
-    	log.debug "Scene ${sceneId} doesn't have a Hue Hub schedule"
-	}    
-}
-
-def updateScene() {
-	log.debug "Updating scene!"
-    def commandData = parent.getCommandData(this.device.deviceNetworkId)
-	log.debug "${commandData}"
-    def sceneLights = this.device.currentValue("lights")
-    log.debug "sceneLights = ${sceneLights}"
-    parent.sendHubCommand(new physicalgraph.device.HubAction(
+def off() {
+	log.trace "Hue B Smart Lux Group: off(): "
+    
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+    def tt = device.currentValue("transitionTime") as Integer ?: 0
+    
+    //parent.sendHubCommand(
+    return new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
-			path: "/api/${commandData.username}/scenes/${commandData.deviceId}/",
+			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        body: [storelightstate: true]
+	        //body: [on: false, transitiontime: tt]
+			body: [on: false]
 		])
-	)	
+//	)
 }
 
-
-
-def updateSceneFromDevice() {
-	log.trace "${this}: Update updateSceneFromDevice Reached."
-
-    def sceneIDfromD = device.currentValue("sceneID")
-
-    log.debug "Retrieved sceneIDfromD: ${sceneIDfromD}."
-
-	String myScene = sceneIDfromD
-
-    if (sceneIDfromD) {	// == null) {
-//    	def sceneIDfromP = parent.getID(this) - "s"
-//    	log.debug "Retrieved sceneIDfromP: ${sceneIDfromP}."
- //       myScene = sceneIDfromP
-//    }
-
-    	updateScene()
-//		log.debug "Executing 'updateScene' for ${device.label} using sceneID ${myScene}."
-	}
+/** 
+ * capability.polling
+ **/
+def poll() {
+	log.trace "Hue B Smart Lux Group: poll(): "
+	refresh()
 }
 
-def updateStatus(type, param, val) {
-
-	//log.debug "updating status: ${type}:${param}:${val}"
-	if (type == "scene") {
-		if (param == "lights") {
-
-            sendEvent(name: "lights", value: val, displayed:false, isStateChange: true)
-        
-        } else if (param == "lightStates") {
-			log.trace "update lightsStates! = ${lightStates}"
-            sendEvent(name: "lightStates", value: val, displayed:true, isStateChange: true)
-            
-        } else if (param == "scheduleId") {
-        
-           	"log.debug Should be updating scheduleId with value of ${val}"
-           	sendEvent(name: "scheduleId", value: val, displayed:false, isStateChange: true)
-                
-		} else if (param == "schedule") {
-
-			sendEvent(name: "schedule", value: val, displayed:false, isStateChange: true)
-            
-		} else {                
-
-			log.debug("Unhandled parameter: ${param}. Value: ${val}")    
-        }
-    }
-}
-
+/**
+ * capability.refresh
+ **/
 def refresh() {
-	log.trace "refresh(): "
+	log.trace "Hue B Smart Lux Group: refresh(): "
 	parent.doDeviceSync()
     configure()
 }
 
-def getDeviceType() { return "scenes" }
+def reset() {
+	log.trace "Hue B Smart Lux Group: reset(): "
+
+	def value = [level:70, saturation:56, hue:23]
+    sendToHub(value)
+}
+
+/**
+ * capability.alert (flash)
+ **/
+
+def flash() {
+	log.trace "Hue B Smart Lux Group: flash(): "
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+	parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [alert: "lselect"]
+		])
+	)
+    
+    runIn(5, flash_off)
+}
+
+def flash_off() {
+	log.trace "Hue B Smart Lux Group: flash_off(): "
+    
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+	parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [alert: "none"]
+		])
+	)
+}
+
+/**
+ * scaleLevel
+ **/
+def scaleLevel(level, fromST = false, max = 254) {
+//	log.trace "scaleLevel( ${level}, ${fromST}, ${max} )"
+    /* scale level from 0-254 to 0-100 */
+    
+    if (fromST) {
+        return Math.round( level * max / 100 )
+    } else {
+    	if (max == 0) {
+    		return 0
+		} else { 	
+        	return Math.round( level * 100 / max )
+		}
+    }    
+//    log.trace "scaleLevel returned ${scaled}."
+    
+}
+                
+/**
+ * Update Status
+ **/
+/**
+private updateStatus(action, param, val) {
+	log.trace "Hue B Smart Lux Group: updateStatus ( ${param}:${val} )"
+	if (action == "action") {
+		switch(param) {
+        	case "on":
+            	def onoff
+            	if (val == true) {
+                	sendEvent(name: "switch", value: on, displayed:false, isStateChange: true)                	     
+                
+                } else {
+	            	sendEvent(name: "switch", value: off, displayed:false)
+                	sendEvent(name: "alert", value: "none", displayed:false, isStateChange: true)    
+                }    
+                break
+            case "bri":
+            	sendEvent(name: "level", value: parent.scaleLevel(val)) //parent.scaleLevel(val, true, 255))
+                break
+            case "transitiontime":
+            	sendEvent(name: "transitionTime", value: val, displayed:false, isStateChange: true)
+                break                
+            case "alert":
+            	if (val == "none") {
+            		flash_off() 
+                } else {
+                	flash()
+                }
+                break
+			case "lights":
+            	sendEvent(name: "lights", value: val, displayed:false, isStateChange: true)
+                break
+            case "scene":
+            	log.trace "received scene ${val}"
+                break    
+			default: 
+				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
+        }
+    }
+}
+**/
+
+/**
+ * Update Status
+ **/
+private updateStatus(action, param, val) {
+	//log.trace "Hue B Lux Group: updateStatus ( ${param}:${val} )"
+	if (action == "action") {
+    	def onoffNotice = state.notisetting1
+    	def otherNotice = state.notisetting2        
+        def curValue
+		switch(param) {
+        	case "on":
+            	curValue = device.currentValue("switch")
+                def onoff
+            	if (val == true) {
+       	         	if (curValue != on) { 
+                		log.debug "Update Needed: Current Value of switch = false & newValue = ${val}"
+                		sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
+					} else {
+		              //log.debug "NO Update Needed for switch."                	
+        	        }
+
+                } else {
+       	         	if (curValue != off) { 
+                		log.debug "Update Needed: Current Value of switch = true & newValue = ${val}"               	                	                
+		            	sendEvent(name: "switch", value: off, displayed: onoffNotice)
+    	            	sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)    
+					} else {
+		               //log.debug "NO Update Needed for switch."                	
+	                }
+
+                }    
+                break
+            case "bri":
+	            curValue = device.currentValue("level")
+                val = scaleLevel(val)
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of level = ${curValue} & newValue = ${val}" 
+	            	sendEvent(name: "level", value: val, displayed: otherNotice, isStateChange: true) 
+				} else {
+	                //log.debug "NO Update Needed for level."                	
+                }
+                
+                break
+            case "transitiontime":
+	            curValue = device.currentValue("transitionTime")
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of transitionTime = ${curValue} & newValue = ${val}"                	
+	            	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
+                } else {
+	                //log.debug "NO Update Needed for transitionTime."                	
+                }    
+                break
+            case "alert":
+            	if (val == "none") {
+            		flash_off() 
+                } else {
+                	flash()
+                }
+                break
+			case "lights":
+            	curValue = device.currentValue("lights")
+                if (curValue != val) { 
+               		log.debug "Update Needed: Current Value of lights = ${curValue} & newValue = ${val}" 
+	            	sendEvent(name: "lights", value: val, displayed: otherNotice, isStateChange: true) 
+				} else {
+	               //log.debug "NO Update Needed for lights"
+                }
+                break
+            case "scene":
+            	log.trace "received scene ${val}"
+                break 
+			default: 
+				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
+        }
+    }
+}
+
+def getDeviceType() { return "lux group" }
