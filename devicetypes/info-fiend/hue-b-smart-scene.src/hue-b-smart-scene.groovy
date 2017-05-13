@@ -12,6 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  version 1.1: added setTo2Groups() - use this function to set scene to two different groups at once 
  */
 metadata {
 	definition (name: "Hue B Smart Scene", namespace: "info_fiend", author: "Anthony Pastor") {
@@ -22,12 +23,14 @@ metadata {
         capability "Configuration"
         
 		command "setToGroup"
+        command "setTo2Groups"        
         command "updateScene"
         command	"updateSceneFromDevice"
         command "updateStatus"
         command "applySchedule"
         command "quickFix"
-        command "noFix"        
+        command "noFix"   
+        command "refresh"   
         
         attribute "getSceneID", "STRING"        
         attribute "lights", "STRING"  
@@ -36,6 +39,7 @@ metadata {
         attribute "host", "string"
         attribute "username", "string"
         attribute "group", "NUMBER"
+        attribute "lightStates", "json_object"  
 	}
 
 	simulator {
@@ -45,7 +49,7 @@ metadata {
 	tiles (scale: 2) {
 	    multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#F505F5"
+				attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#79b821"
 			}
 		
 //        	tileAttribute ("lights", key: "SECONDARY_CONTROL") {
@@ -54,7 +58,7 @@ metadata {
 		}
     
 	    standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+			state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
 		}
 
     	standardTile("sceneID", "device.sceneID", inactiveLabel: false, decoration: "flat", width: 6, height: 2) { //, defaultState: "State1"
@@ -69,6 +73,10 @@ metadata {
 			state "default", label: 'Lights: ${currentValue}'
         }
         
+        valueTile("lightStates", "device.lightStates", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+			state "default", label: 'lightStates: ${currentValue}'
+        }
+        
         valueTile("scheduleId", "device.scheduleId", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
 			state "scheduleId", label: 'Schedule: ${currentValue} ' //, action:"getScheduleID"
         }
@@ -78,7 +86,7 @@ metadata {
 	    }
         
     main "switch"
-    details (["switch", "lights", "schedule", "scheduleId", "sceneID", "updateScene", "refresh"]) 	// "scheduleId",
+    details (["switch", "lights", "lightStates", "schedule", "scheduleId", "sceneID", "updateScene", "refresh"]) 	// "scheduleId",
 	}
 }
 
@@ -90,6 +98,8 @@ private configure() {
     sendEvent(name: "scheduleId", value: commandData.scheduleId, displayed:true, isStateChange: true)
     sendEvent(name: "host", value: commandData.ip, displayed:false, isStateChange: true)
     sendEvent(name: "username", value: commandData.username, displayed:false, isStateChange: true)
+    sendEvent(name: "lights", value: commandData.lights, displayed:false, isStateChange: true)
+    sendEvent(name: "lightStates", value: commandData.lightStates, displayed:false, isStateChange: true)
 }
 
 // parse events into attributes
@@ -143,6 +153,66 @@ def setToGroup ( Integer inGroupID = 0) {
 	)
 
 }
+
+def setTo2Groups ( group1, group2 ) {
+	log.debug("setTo2Groups ${this.device.label}: Turning scene on for groups ${group1} , ${group2}!")
+
+ 	def commandData = parent.getCommandData(this.device.deviceNetworkId)
+	log.debug "setTo2Groups: ${commandData}"
+    
+	def sceneID = commandData.deviceId
+
+	log.debug "${this.device.label}: setTo2Groups: sceneID = ${sceneID} "
+    log.debug "${this.device.label}: setTo2Groups: group1 = ${group1} "
+    
+    String gPath = "/api/${commandData.username}/groups/${group1}/action"
+
+    parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "${gPath}",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [scene: "${commandData.deviceId}"]
+		])
+	)
+
+    log.debug "${this.device.label}: setTo2Groups: group2 = ${group2} "
+    gPath = "/api/${commandData.username}/groups/${group2}/action"
+
+    parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "${gPath}",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [scene: "${commandData.deviceId}"]
+		])
+	)
+
+
+}
+
+def turnGroupOn(inGroupID) {
+	log.debug "Executing 'turnGroupOn ( ${inGroupID} )'"
+
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+    
+        return new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "/api/${commandData.username}/groups/${inGroupID}/action",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [on: true]
+		])
+
+	parent.doDeviceSync()
+}
+
 
 def quickFix() {
 	log.debug "Turning QuickFix ON (if schedule exists)"
@@ -212,20 +282,24 @@ def updateSceneFromDevice() {
 
 def updateStatus(type, param, val) {
 
-	log.debug "updating status: ${type}:${param}:${val}"
+	//log.debug "updating status: ${type}:${param}:${val}"
 	if (type == "scene") {
 		if (param == "lights") {
 
-            sendEvent(name: "lights", value: val, displayed:true, isStateChange: true)
+            sendEvent(name: "lights", value: val, displayed:false, isStateChange: true)
+        
+        } else if (param == "lightStates") {
+			log.trace "update lightsStates! = ${lightStates}"
+            sendEvent(name: "lightStates", value: val, displayed:true, isStateChange: true)
             
         } else if (param == "scheduleId") {
         
            	"log.debug Should be updating scheduleId with value of ${val}"
-           	sendEvent(name: "scheduleId", value: val, displayed:true, isStateChange: true)
+           	sendEvent(name: "scheduleId", value: val, displayed:false, isStateChange: true)
                 
 		} else if (param == "schedule") {
 
-			sendEvent(name: "schedule", value: val, displayed:true, isStateChange: true)
+			sendEvent(name: "schedule", value: val, displayed:false, isStateChange: true)
             
 		} else {                
 
@@ -234,6 +308,10 @@ def updateStatus(type, param, val) {
     }
 }
 
-
+def refresh() {
+	log.trace "refresh(): "
+	parent.doDeviceSync()
+    configure()
+}
 
 def getDeviceType() { return "scenes" }
