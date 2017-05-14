@@ -280,9 +280,13 @@ def bridges() {
         section("Linked Bridges") {
             getLinkedBridges().sort { it.value.name }.each {
                 def ip = convertHexToIP(it.value.networkAddress)
+		    log.debug("283 ${ip}")
                 def mac = "${it.value.mac}"
+		    log.debug("285 ${ip}")
                 state.mac = mac
+		    log.debug("287 ${state.mac}")
                 def title = "Hue Bridge ${ip}"
+		    log.debug("289 ${title}")
                 href(name:"manageBridge ${mac}", page:"manageBridge", title: title, description: "", params: [mac: mac])
             }
         }
@@ -290,8 +294,11 @@ def bridges() {
             paragraph "Searching for Hue bridges. They will appear here when found. Please wait."
             getVerifiedBridges().sort { it.value.name }.each {
                 def ip = convertHexToIP(it.value.networkAddress)
+		    log.debug("297 ${ip}")
                 def mac = "${it.value.mac}"
+		    log.debug("299 ${ip}")
                 def title = "Hue Bridge ${ip}"
+		    log.debug("301 ${title}")
                 href(name:"linkBridge ${mac}", page:"linkButton", title: title, description: "", params: [mac: mac, ip: ip, ssdpUSN: it.value.ssdpUSN])
             }
         }
