@@ -144,16 +144,21 @@ def linkButton(params) {
     /* if the user hit the back button, use saved parameters as the passed ones no longer good
      * also uses state.params to pass these on to the next page
      */
+//href(name:"linkBridge ${mac}", page:"linkButton", title: title, description: "", params: [mac: mac, ip: ip, ssdpUSN: it.value.ssdpUSN])
+	log.debug "Line 148 ${params.mac}"
+	log.debug "Line 149 ${state.params}"
     if (params.mac) {
         state.params = params;
     } else {
         params = state.params;
     }
-
+    log.debug "Line 155 ${params}"
+	log.debug "Line 156 IP ${params.ip}"
+	log.debug "Line 155 MAC ${params.mac}"
     int linkRefreshcount = !state.linkRefreshcount ? 0 : state.linkRefreshcount as int
     state.linkRefreshcount = linkRefreshcount + 1
     def refreshInterval = 3
-
+    
     params.linkingBridge = true
     if (!params.linkDone) {
         if ((linkRefreshcount % 2) == 0) {
