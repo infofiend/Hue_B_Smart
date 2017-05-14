@@ -85,7 +85,7 @@ def discoverItems(inItems = null) {
 	def host = state.host
 	def username = state.userName
         
-//	log.debug "*********** ${username} ********"
+	log.debug "*********** ${username} ********"
 	def result 
         
     if (!inItems) {
@@ -103,7 +103,7 @@ def discoverItems(inItems = null) {
 }
 
 def pollItems() {
-	//log.trace "pollItems: polling state of all items from Hue hub."
+	log.trace "pollItems: polling state of all items from Hue hub."
 
 	def host = state.host
 	def username = state.userName
@@ -119,7 +119,7 @@ def pollItems() {
 }
 
 def discoverBulbs() {
-	//log.trace "discoverBulbs: discovering bulbs from Hue hub."
+	log.trace "discoverBulbs: discovering bulbs from Hue hub."
 
 	def host = state.host
 	def username = state.userName
@@ -136,7 +136,7 @@ def discoverBulbs() {
 }
 
 def pollBulbs() {
-	//log.trace "pollBulbs: polling bulbs state from Hue hub."
+	log.trace "pollBulbs: polling bulbs state from Hue hub."
 
 	def host = state.host
 	def username = state.userName
@@ -152,7 +152,7 @@ def pollBulbs() {
 }
 
 def discoverGroups() {
-	//log.debug("discoverGroups: discovering groups from Hue hub.")
+	log.debug("discoverGroups: discovering groups from Hue hub.")
 
 	def host = state.host
 	def username = state.userName
@@ -169,7 +169,7 @@ def discoverGroups() {
 }
 
 def pollGroups() {
-	//log.trace "pollGroups: polling groups state from Hue hub."
+	log.trace "pollGroups: polling groups state from Hue hub."
 
 	def host = state.host
 	def username = state.userName
@@ -185,7 +185,7 @@ def pollGroups() {
 }
 
 def discoverScenes() {
-	//log.debug("discoverScenes: discovering scenes from Hue hub.")
+	log.debug("discoverScenes: discovering scenes from Hue hub.")
 
 	def host = state.host
 	def username = state.userName
@@ -202,7 +202,7 @@ def discoverScenes() {
 }
 
 def pollScenes() {
-	//log.trace "pollGroups: polling scenes state from Hue hub."
+	log.trace "pollGroups: polling scenes state from Hue hub."
 
 	def host = state.host
 	def username = state.userName
@@ -219,7 +219,7 @@ def pollScenes() {
 
 
 def discoverSchedules() {
-	//log.trace "discoverSchedules: discovering schedules from Hue hub."
+	log.trace "discoverSchedules: discovering schedules from Hue hub."
 
 	def host = state.host
 	def username = state.userName
@@ -238,7 +238,7 @@ def discoverSchedules() {
 
 def handleParse(desc) {
 
-//	log.trace "handleParse()"
+	log.trace "handleParse()"
 	parse(desc)
 
 }
@@ -248,7 +248,7 @@ def handleParse(desc) {
 
 def parse(String description) {
 
-	//log.trace "parse()"
+	log.trace "parse()"
 	
 	def parsedEvent = parseLanMessage(description)
 	if (parsedEvent.headers && parsedEvent.body) {
@@ -261,11 +261,11 @@ def parse(String description) {
             
 			/* responses from bulb/group/scene/schedule command. Figure out which device it is, then pass it along to the device. */
 			if (body[0] != null && body[0].success != null) {
-            	//log.trace "${body[0].success}"
+            	log.trace "${body[0].success}"
 				body.each{
 					it.success.each { k, v ->
 						def spl = k.split("/")
-						//log.debug "k = ${k}, split1 = ${spl[1]}, split2 = ${spl[2]}, split3 = ${spl[3]}, split4= ${spl[4]}, value = ${v}"                            
+						log.debug "k = ${k}, split1 = ${spl[1]}, split2 = ${spl[2]}, split3 = ${spl[3]}, split4= ${spl[4]}, value = ${v}"                            
 						def devId = ""
                         def d
                         def groupScene
@@ -295,7 +295,7 @@ def parse(String description) {
 //								def username = state.userName
                             
                             d.updateStatus(spl[3], spl[4], v) 
-							//log.debug "Scene ${d.label} successfully run on group ${groupScene}."
+							log.debug "Scene ${d.label} successfully run on group ${groupScene}."
 					                        
 			     	        //pollGroups() 	// parent.doDeviceSync("groups")
 			     	        //pollBulbs() 	// parent.doDeviceSync("bulbs")
@@ -303,7 +303,7 @@ def parse(String description) {
                     	// GROUPS
 						} else if (spl[1] == "groups" && spl[2] != 0 ) {    
             	        	devId = bridge.value.mac + "/" + spl[1].toUpperCase()[0..-2] + spl[2]
-        	    	        //log.debug "GROUP: devId = ${devId}"                            
+        	    	        log.debug "GROUP: devId = ${devId}"                            
 	
 							d = parent.getChildDevice(devId)
 
@@ -354,7 +354,7 @@ def parse(String description) {
 				state.groups = groups
 				
 	            body.scenes?.each { k, v -> 
-//                   	log.trace "k=${k} and v=${v}"
+                   	log.trace "k=${k} and v=${v}"
                         				
                   	scenes[k] = [id: k, label: v.name, type: "scene", lights: v.lights]
                             
@@ -363,15 +363,15 @@ def parse(String description) {
                 state.scenes = scenes
                     
                 body.schedules?.each { k, v -> 
-           //        	log.trace "schedules k=${k} and v=${v}"
+                  	log.trace "schedules k=${k} and v=${v}"
                    	
                    	def schCommand = v.command.address
-                //  log.debug "schCommand = ${schCommand}"
+                  log.debug "schCommand = ${schCommand}"
                 
                     def splCmd = schCommand.split("/")
-//                  log.debug "splCmd[1] = ${splCmd[1]} / splCmd[2] = ${splCmd[2]} / splCmd[3] = ${splCmd[3]} / splCmd[4] = ${splCmd[4]}"                        
+                 log.debug "splCmd[1] = ${splCmd[1]} / splCmd[2] = ${splCmd[2]} / splCmd[3] = ${splCmd[3]} / splCmd[4] = ${splCmd[4]}"                        
                     def schGroupId = splCmd[4] 
-				//	log.debug "schGroupId = ${schGroupId}"
+					log.debug "schGroupId = ${schGroupId}"
 //                 	def schSceneId = bridge.value.mac + "/SCENES" + ${v.command.body.scene}
     	        
     	            schedules[k] = [id: k, name: v.name, type: "schedule", sceneId: v.command.body.scene, groupId: schGroupId, status: v.status]
@@ -404,7 +404,7 @@ def parse(String description) {
 			}
 			
 		} else {
-			//log.debug("Unrecognized messsage: ${parsedEvent.body}")
+			log.debug("Unrecognized messsage: ${parsedEvent.body}")
 		}
 		
 	}
