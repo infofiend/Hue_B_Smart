@@ -172,12 +172,19 @@ def linkButton(params) {
         
         def bridge = getUnlinkedBridges().find{it?.key?.contains(params.ssdpUSN)}
         log.debug("bridge ${bridge}")
-        def d = addChildDevice("info_fiend", "Hue B Smart Bridge", bridge.value.mac, bridge.value.hub, [label: "Hue B Smart Bridge (${params.ip})"])
+
+		state.user = params.username
+        state.host = params.ip + ":80"
+        log.debug "state.user = ${state.user} ******************"
+		log.debug "state.host = ${state.host} ******************"
+        log.debug "bridge.value.serialNumber = ${bridge.value.serialNumber} ******************"
+
+        def d = addChildDevice("info_fiend", "Hue B Smart Bridge", bridge.value.mac, bridge.value.hub, [label: "Hue B Smart Bridge (${params.ip}", username: "${params.username}", networkAddress: "${params.ip}", host: "${state.host}"])
 		
         d.sendEvent(name: "networkAddress", value: params.ip)
         d.sendEvent(name: "serialNumber", value: bridge.value.serialNumber)
         d.sendEvent(name: "username", value: params.username)
-		state.user = params.username
+		//state.user = params.username
         subscribe(d, "itemDiscovery", itemDiscoveryHandler)
 
         params.linkDone = false
@@ -918,7 +925,7 @@ def createQuickfixSch(params) {
    	        }            	    	
    		} else { 
 			section("To what Group should that scene be applied?") {
-				log.debug "availableGroups = ${availableGroups}"
+//				log.debug "availableGroups = ${availableGroups}"
 				state.availableGroups.sort{it.value.name}.each {
 					def grDevId = "${it.key}"
 					def grName = it.value.name
@@ -1144,8 +1151,7 @@ def initialize() {
     state.scheduleEnabled = [:]
     
 	doDeviceSync()
-	//runEvery5Minutes(doDeviceSync)
-	runIn(210, doDeviceSync)
+	runEvery5Minutes(doDeviceSync)
 
 	state.linked_bridges.each {
         def d = getChildDevice(it.value.mac)
