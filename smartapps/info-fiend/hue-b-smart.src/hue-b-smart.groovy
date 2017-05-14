@@ -154,7 +154,7 @@ def linkButton(params) {
         if ((linkRefreshcount % 2) == 0) {
             sendDeveloperReq("${params.ip}:80", params.mac)
         }
-        log.debug "linkButton ${params}"
+        log.debug "Line 157 linkButton ${params}"
         dynamicPage(name: "linkButton", refreshInterval: refreshInterval, nextPage: "linkButton") {
             section("Hue Bridge ${params.ip}") {
                 paragraph "Please press the link button on your Hue bridge."
