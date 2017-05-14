@@ -58,10 +58,15 @@ def manageBridge(params) {
     }
 
     def bridge = getBridge(params.mac)
+	log.debug("61 ${bridge}")
     def ip = convertHexToIP(bridge.value.networkAddress)
+	log.debug("63 ${ip}")
     def mac = params.mac
+	log.debug("65 ${mac}")
     def bridgeDevice = getChildDevice(mac)
+	log.debug("67 ${bridgeDevice}")
     def title = "${bridgeDevice.label} ${ip}"
+	log.debug("69 ${title}")
     def refreshInterval = 2
 
     if (!bridgeDevice) {
