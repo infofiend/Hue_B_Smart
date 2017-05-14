@@ -918,7 +918,7 @@ def createQuickfixSch(params) {
    	        }            	    	
    		} else { 
 			section("To what Group should that scene be applied?") {
-//				log.debug "availableGroups = ${availableGroups}"
+				log.debug "availableGroups = ${availableGroups}"
 				state.availableGroups.sort{it.value.name}.each {
 					def grDevId = "${it.key}"
 					def grName = it.value.name
@@ -1329,14 +1329,14 @@ private verifyHueBridge(String deviceNetworkId, String host) {
  * HUE BRIDGE RESPONSES
  **/
 private processDiscoveryResponse(parsedEvent) {
-	//log.debug("Discovery Response is ${parsedEvent}.")
-    //log.debug("Discovered bridge ${parsedEvent.mac} (${convertHexToIP(parsedEvent.networkAddress)})")
+	log.debug("Discovery Response is ${parsedEvent}.")
+    log.debug("Discovered bridge ${parsedEvent.mac} (${convertHexToIP(parsedEvent.networkAddress)})")
 
     def bridge = getUnlinkedBridges().find{it?.key?.contains(parsedEvent.ssdpUSN)} 
     if (!bridge) { bridge = getLinkedBridges().find{it?.key?.contains(parsedEvent.ssdpUSN)} }
     if (bridge) {
         /* have already discovered this bridge */
-        //log.debug("Previously found bridge discovered")
+        log.debug("Previously found bridge discovered")
         /* update IP address */
         if (parsedEvent.networkAddress != bridge.value.networkAddress) {
         	bridge.value.networkAddress = parsedEvent.networkAddress
@@ -1347,19 +1347,19 @@ private processDiscoveryResponse(parsedEvent) {
         }
     } else { 
     
-        //log.debug("Found new bridge.")
+        log.debug("Found new bridge.")
         state.unlinked_bridges << ["${parsedEvent.ssdpUSN}":parsedEvent]
    }
 }
 
 private processVerifyResponse(eventBody) {
-    //log.debug("Processing verify response.")
+    log.debug("Processing verify response.")
     def body = new XmlSlurper().parseText(eventBody)
     if (body?.device?.modelName?.text().startsWith("Philips hue bridge")) {
-        //log.debug(body?.device?.UDN?.text())
+        log.debug(body?.device?.UDN?.text())
         def bridge = getUnlinkedBridges().find({it?.key?.contains(body?.device?.UDN?.text())})
         if (bridge) {
-            //log.debug("found bridge!")
+            log.debug("found bridge!")
             bridge.value << [name:body?.device?.friendlyName?.text(), serialNumber:body?.device?.serialNumber?.text(), verified: true, itemsDiscovered: false]
         } else {
             log.error "/description.xml returned a bridge that didn't exist"
