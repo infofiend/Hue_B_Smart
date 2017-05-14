@@ -72,7 +72,11 @@ def updated() {
 }
 
 def initialize() {
-	
+	def commandData = parent.getCommandData(device.deviceNetworkId)
+    log.debug "${commandData = commandData}"
+    sendEvent(name: "idNumber", value: commandData.deviceId, displayed:true, isStateChange: true)
+    sendEvent(name: "networkAddress", value: commandData.ip, displayed:false, isStateChange: true)
+    sendEvent(name: "username", value: commandData.username, displayed:false, isStateChange: true)
     state.host = this.device.currentValue("networkAddress") + ":80"
     state.userName = this.device.currentValue("username")
     
@@ -80,7 +84,7 @@ def initialize() {
 
 
 def discoverItems(inItems = null) {
-	//log.trace "Bridge discovering all items on Hue hub."
+	log.trace "Bridge discovering all items on Hue hub."
 
 	def host = state.host
 	def username = state.userName
@@ -287,7 +291,7 @@ def parse(String description) {
 
 						// SCENES			
 						} else if (spl[4] == "scene" || it.toString().contains( "lastupdated") ) {	
-							//log.trace "HBS Bridge:parse:scene - msg.body == ${body}"
+							log.trace "HBS Bridge:parse:scene - msg.body == ${body}"
                    			devId = bridge.value.mac + "/SCENE" + v
 	                        d = parent.getChildDevice(devId)
     	                        groupScene = spl[2]
