@@ -60,7 +60,7 @@ metadata {
 
 void installed() {
 	log.debug "Line 62 Installed with settings: ${settings}"
-	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
+	//sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
 
 	initialize()
 }
