@@ -147,14 +147,15 @@ def linkButton(params) {
 //href(name:"linkBridge ${mac}", page:"linkButton", title: title, description: "", params: [mac: mac, ip: ip, ssdpUSN: it.value.ssdpUSN])
 	log.debug "Line 148 ${params.mac}"
 	log.debug "Line 149 ${state.params}"
+	log.debug "Line 150 ${params}"
     if (params.mac) {
         state.params = params;
     } else {
         params = state.params;
     }
     log.debug "Line 155 ${params}"
-	log.debug "Line 156 IP ${params.ip}"
-	log.debug "Line 155 MAC ${params.mac}"
+	log.debug "Line 156A IP ${params.ip} IP ${state.params.ip}"
+	log.debug "Line 156B MAC ${params.mac} MAC ${state.params.mac}"
     int linkRefreshcount = !state.linkRefreshcount ? 0 : state.linkRefreshcount as int
     state.linkRefreshcount = linkRefreshcount + 1
     def refreshInterval = 3
