@@ -296,7 +296,7 @@ def bridges() {
                 def ip = convertHexToIP(it.value.networkAddress)
 		    log.debug("297 ${ip}")
                 def mac = "${it.value.mac}"
-		    log.debug("299 ${ip}")
+		    log.debug("299 ${mac}")
                 def title = "Hue Bridge ${ip}"
 		    log.debug("301 ${title}")
                 href(name:"linkBridge ${mac}", page:"linkButton", title: title, description: "", params: [mac: mac, ip: ip, ssdpUSN: it.value.ssdpUSN])
