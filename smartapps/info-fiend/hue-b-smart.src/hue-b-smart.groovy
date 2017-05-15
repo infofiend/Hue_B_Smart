@@ -65,7 +65,7 @@ def manageBridge(params) {
 	log.debug("65 ${mac}")
     def bridgeDevice = getChildDevice(mac)
 	log.debug("67 ${bridgeDevice}")
-    def title = "${bridgeDevice.label} ${ip}"
+    def title = "${bridgeDevice} ${ip}"
 	log.debug("69 ${title}")
     def refreshInterval = 2
 
