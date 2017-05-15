@@ -1443,6 +1443,8 @@ def getCommandData(id) {
                   username: "${userName}",
                   deviceId: "${devId}",  ]
     
+    log.debug("Out getCommandData = ${result}")
+    
     return result
 }
 
