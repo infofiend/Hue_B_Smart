@@ -179,10 +179,10 @@ def linkButton(params) {
         /* link success! create bridge device */
         log.debug "Bridge linked! Line 169"
         log.debug("ssdp ${params.ssdpUSN} Line 170")
-        log.debug("username ${params.username} Line 171")
+        log.debug("username ${params.username} Line 171A")
         
         def bridge = getUnlinkedBridges().find{it?.key?.contains(params.ssdpUSN)}
-        log.debug("bridge ${bridge}")
+        log.debug("line 171B bridge ${bridge}")
 
 		state.user = params.username
         state.host = params.ip + ":80"
@@ -196,7 +196,7 @@ def linkButton(params) {
         d.sendEvent(name: "serialNumber", value: bridge.value.serialNumber)
         d.sendEvent(name: "username", value: params.username)
 		//state.user = params.username
-        subscribe(d, "itemDiscovery", itemDiscoveryHandler)
+        //subscribe(d, "itemDiscovery", itemDiscoveryHandler)
 
         params.linkDone = false
         params.linkingBridge = false
@@ -321,7 +321,7 @@ def deleteBridge(params) {
 	
 	def bridge = getBridge(params.mac)
     def d = getChildDevice(params.mac)
-    log.debug "Deleting bridge ${d.currentValue('networkAddress')} (${params.mac})"
+    log.debug "Line 314A Deleting bridge ${d.currentValue('networkAddress')} (${params.mac})"
     
 	def success = true
 	def devices = getChildDevices()
@@ -615,7 +615,7 @@ def chooseGroups(params) {
     }
 
 	if (params.add) {
-	    log.debug("Adding ${params.add}")
+	    log.debug("602A Adding ${params.add}")
         def groupId = params.add
         log.debug "ADDING GROUP: params.mac = ${params.mac} / groupId = ${groupId} 602"
 		params.add = null
@@ -626,7 +626,7 @@ def chooseGroups(params) {
         if (g.action.hue) {
 			try { 
 				def d = addChildDevice("info_fiend", "Hue B Smart Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Color Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
-	    	    log.debug "adding group ${d}."	//  Are lights assigned? lights = ${g.lights}"     
+	    	    log.debug "622A adding group ${d}."	//  Are lights assigned? lights = ${g.lights}"     
             	["bri", "sat", "hue", "on", "xy", "ct", "colormode", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
 				}
@@ -642,7 +642,7 @@ def chooseGroups(params) {
 		} else {
 			try { 
 				def d = addChildDevice("info_fiend", "Hue B Smart Lux Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Lux Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
-	    	    log.debug "adding group ${d}."  // Are lights assigned? lights = ${g.lights}"     
+	    	    log.debug "638A adding group ${d}."  // Are lights assigned? lights = ${g.lights}"     
             	["bri", "on", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
 				}
@@ -808,7 +808,7 @@ def chooseSchedules(params) {
 }
 
 def createQuickfixSch(params) {
-	log.trace "createQuickfixSch ( ${params} )"
+	log.trace "Line 807A createQuickfixSch ( ${params} )"
     
     if (params.mac) {
         state.params = params;
@@ -858,7 +858,7 @@ def createQuickfixSch(params) {
 
     log.debug "selectedScene = ${state.selectedScene}, selectedGroup = ${state.selectedGroup} Line 841"
     log.debug "selectedScene.id = ${state.selectedScene.value.id}, selectedGroup.id = ${state.selectedGroup.value.id} Line 842"
-	if (params.confirm) { log.debug "params.confirm = ${params.confirm}" }
+	if (params.confirm) { log.debug "Line 842B params.confirm = ${params.confirm}" }
     
 	if ( params.confirm == true) {
 	    log.debug("createQuickfixSch: CONFIRMED creation of ${state.newSchedule.qfName} ( ${state.newSchedule.groupId} , ${state.newSchedule.sceneId} )")
@@ -1584,7 +1584,7 @@ def scaleLevel(level, fromST = false, max = 254) {
 }
 
 def parse(desc) {
-    log.debug("parse")
+    log.debug("Line 1587 parse")
 }
 
 def doDeviceSync(inItems = null) {
