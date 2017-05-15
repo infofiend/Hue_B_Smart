@@ -73,7 +73,7 @@ def updated() {
 
 def initialize() {
 	def commandData = parent.getCommandData(device.deviceNetworkId)
-    log.debug "Line 76 ${commandData = commandData}"
+    log.debug "Line 76 ${commandData}"
     sendEvent(name: "idNumber", value: commandData.deviceId, displayed:true, isStateChange: true)
     sendEvent(name: "networkAddress", value: commandData.ip, displayed:false, isStateChange: true)
     sendEvent(name: "username", value: commandData.username, displayed:false, isStateChange: true)
