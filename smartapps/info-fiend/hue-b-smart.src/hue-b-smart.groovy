@@ -1406,7 +1406,7 @@ private sendDeveloperReq(ip, mac) {
 /**
  * UTILITY FUNCTIONS
  **/
-def getCommandData(id) {
+/*def getCommandData(id) {
     def ids = id.split("/")
     def bridge = getBridge(ids[0])
     def bridgeDev = getChildDevice(ids[0])
@@ -1415,6 +1415,34 @@ def getCommandData(id) {
                   username: "${bridgeDev.currentValue("username")}",
                   deviceId: "${ids[1] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"}",
     ]
+    return result
+}*/
+
+def getCommandData(id) {
+    def ids = id.split("/")
+    def devId
+    def ipAddr
+    def userName
+ 
+    log.debug("In getCommandData()")
+    log.debug("id = ${id}")
+    
+    if( id.contains("/") ) {
+       devId = ids[1] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"
+    }
+    else {
+       devId = ids
+    }
+    
+    if( state.host ) {
+       def url = state.host.split(":")
+       ipAddr = url[0] + ":80"
+       userName = state.user
+    }
+    def result = [ip: "${ipAddr}",
+                  username: "${userName}",
+                  deviceId: "${devId}",  ]
+    
     return result
 }
 
