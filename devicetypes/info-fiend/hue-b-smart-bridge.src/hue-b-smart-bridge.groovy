@@ -79,16 +79,19 @@ def initialize() {
     sendEvent(name: "username", value: commandData.username, displayed:false, isStateChange: true)
     state.host = this.device.currentValue("networkAddress") + ":80"
     state.userName = this.device.currentValue("username")
-    
+    state.initialize = true
 }
 
 
 def discoverItems(inItems = null) {
 	log.trace "Bridge discovering all items on Hue hub."
-
+	
+	if (state.initialize != true ) { initialize() }
+ 
 	def host = state.host
 	def username = state.userName
-        
+
+        log.debug "*********** ${host} ********"
 	log.debug "*********** ${username} ********"
 	def result 
         
