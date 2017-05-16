@@ -58,19 +58,18 @@ def manageBridge(params) {
     }
 
     def bridge = getBridge(params.mac)
-	log.debug("61 ${bridge}")
+	log.debug("Manage Bridge ${bridge}")
     def ip = convertHexToIP(bridge.value.networkAddress)
-	log.debug("63 ${ip}")
+	log.debug("Manage Bridge ${ip}")
     def mac = params.mac
-	log.debug("65 ${mac}")
+	log.debug("Manage Bridge Params ${mac}")
     def bridgeDevice = getChildDevice(mac)
-	log.debug("67 ${bridgeDevice}")
+	log.debug("Manage Bridge GET ${bridgeDevice}")
     def title = "${bridgeDevice} ${ip}"
-	log.debug("69 ${title}")
     def refreshInterval = 2
 
     if (!bridgeDevice) {
-        log.debug("Bridge device not found? Line 68")
+        log.debug("Bridge device not found?")
         /* Error, bridge device doesn't exist? */
         return
     }
@@ -191,7 +190,7 @@ def linkButton(params) {
         d.sendEvent(name: "serialNumber", value: bridge.value.serialNumber)
         d.sendEvent(name: "username", value: params.username)
 
-        //subscribe(d, "itemDiscovery", itemDiscoveryHandler) //Was erroring for Cbuckles17
+        subscribe(d, "itemDiscovery", itemDiscoveryHandler) //Was erroring for Cbuckles17
 
         params.linkDone = false
         params.linkingBridge = false
