@@ -190,7 +190,7 @@ def linkButton(params) {
         d.sendEvent(name: "serialNumber", value: bridge.value.serialNumber)
         d.sendEvent(name: "username", value: params.username)
 
-        subscribe(d, "itemDiscovery", itemDiscoveryHandler) //Was erroring for Cbuckles17
+        //subscribe(d, "itemDiscovery", itemDiscoveryHandler) //Was erroring for Cbuckles17
 
         params.linkDone = false
         params.linkingBridge = false
