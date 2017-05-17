@@ -89,9 +89,13 @@ metadata {
             state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
         }
 
+		valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+			state "default", label: 'GroupID: ${currentValue}'
+		}	
+
 	}
 	main(["rich-control"])
-	details(["rich-control","reset","flash", "refresh", "transitiontime"])
+	details(["rich-control","reset","flash", "refresh", "groupID" ,"transitiontime"])
 }
 
 private configure() {		
