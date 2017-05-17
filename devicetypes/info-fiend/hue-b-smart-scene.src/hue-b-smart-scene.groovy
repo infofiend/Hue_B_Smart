@@ -12,17 +12,18 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  version 1.1: added setTo2Groups() - use this function to set scene to two different groups at once 
+ *  	Version 1 TMLeafs Fork
+ *
  */
 metadata {
 	definition (name: "Hue B Smart Scene", namespace: "info_fiend", author: "Anthony Pastor") {
-		capability "Actuator"
+	capability "Actuator"
         capability "Switch"
         capability "Momentary"
         capability "Sensor"
         capability "Configuration"
         
-		command "setToGroup"
+	command "setToGroup"
         command "setTo2Groups"        
         command "updateScene"
         command	"updateSceneFromDevice"
@@ -51,43 +52,39 @@ metadata {
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#79b821"
 			}
-		
-//        	tileAttribute ("lights", key: "SECONDARY_CONTROL") {
-//                attributeState "lights", label:'The scene controls Hue lights ${currentValue}.'
-//            }
-		}
+	}
     
-	    standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
-			state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
-		}
+	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
+		state "default", label:"", action:"refresh", icon:"st.secondary.refresh"
+	}
 
     	standardTile("sceneID", "device.sceneID", inactiveLabel: false, decoration: "flat", width: 6, height: 2) { //, defaultState: "State1"
 	       	state "sceneID", label: 'SceneID: ${currentValue} ' //, action:"getSceneID" //, backgroundColor:"#BDE5F2" //, nextState: "State2"
     	}
 
-		standardTile("updateScene", "device.updateScene", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
+	standardTile("updateScene", "device.updateScene", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
     	   	state "Ready", label: 'Update Scene', action:"updateSceneFromDevice", backgroundColor:"#FBB215"
-	    }
+	}
 	
- 		valueTile("lights", "device.lights", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-			state "default", label: 'Lights: ${currentValue}'
+ 	valueTile("lights", "device.lights", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+		state "default", label: 'Lights: ${currentValue}'
         }
         
         valueTile("lightStates", "device.lightStates", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-			state "default", label: 'lightStates: ${currentValue}'
+		state "default", label: 'lightStates: ${currentValue}'
         }
         
         valueTile("scheduleId", "device.scheduleId", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
-			state "scheduleId", label: 'Schedule: ${currentValue} ' //, action:"getScheduleID"
+		state "scheduleId", label: 'Schedule: ${currentValue} ' //, action:"getScheduleID"
         }
-        valueTile("schedule", "device.schedule",  width: 4, height: 2) {	//decoration: "flat"
+        
+	valueTile("schedule", "device.schedule",  width: 4, height: 2) {	//decoration: "flat"
     	   	state "off", label: 'QFix Off', action:"quickFix", backgroundColor:"#BDE5F2" //, nextState: "Enabled"
-            state "on", label: 'QFix On', action:"noFix", backgroundColor:"#FFA500"//, defaultState: "Disabled"
-	    }
+          	state "on", label: 'QFix On', action:"noFix", backgroundColor:"#FFA500"//, defaultState: "Disabled"
+	}
         
     main "switch"
-    //details (["switch", "lights", "lightStates", "schedule", "scheduleId", "sceneID", "updateScene", "refresh"]) 	// "scheduleId",
-	details (["switch", "lights", "updateScene", "refresh","sceneID"]) 	// "scheduleId",
+    details (["switch", "lights", "updateScene", "refresh","sceneID"]) 	// "scheduleId",
 	}
 }
 
