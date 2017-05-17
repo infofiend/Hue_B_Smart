@@ -14,13 +14,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Version 1.0 
+ *	Version 1 TMLeafs Fork 
  *
- *	Version 1.0b -- attribute colorTemp is now colorTemperature - changing colorTemperature no longer turns on device
- *
- *  Version 1.0c -- corrected name of DTH
- *
- *  Version 1.1 -- added applyRelax, applyConcentrate, applyReading, and applyEnergize functions 
  */
 preferences {
 	input("tt", "integer", defaultValue: 4, title: "Time it takes for the lights to transition (default: 4 = 400ms)")   
@@ -30,16 +25,16 @@ preferences {
  
 metadata {
 	definition (name: "Hue B Smart White Ambiance", namespace: "info_fiend", author: "Anthony Pastor") {
-		capability "Switch Level"
-		capability "Actuator"
-	    capability "Color Temperature"
-		capability "Switch"
-		capability "Polling"
-		capability "Refresh"
-		capability "Sensor"
+	capability "Switch Level"
+	capability "Actuator"
+	capability "Color Temperature"
+	capability "Switch"
+	capability "Polling"
+	capability "Refresh"
+	capability "Sensor"
         capability "Configuration"
-		capability "Health Check"
-		capability "Light"
+	capability "Health Check"
+	capability "Light"
         
         command "reset"
         command "refresh"
@@ -47,26 +42,26 @@ metadata {
         command "flash_off"
         command "setColorTemperature"        
         command "updateStatus"
-		command "getHextoXY"
+	command "getHextoXY"
         command "sendToHub"
-		command "applyRelax"
+	command "applyRelax"
         command "applyConcentrate"
         command "applyReading"
         command "applyEnergize"
         command "scaleLevel"
 
- 		attribute "colorTemperature", "number"
-		attribute "bri", "number"
-		attribute "sat", "number"
+ 	attribute "colorTemperature", "number"
+	attribute "bri", "number"
+	attribute "sat", "number"
         attribute "level", "number"
-		attribute "reachable", "string"
-		attribute "hue", "number"
-		attribute "on", "string"
+	attribute "reachable", "string"
+	attribute "hue", "number"
+	attribute "on", "string"
         attribute "transitionTime", "NUMBER"
         attribute "hueID", "STRING"
         attribute "host", "STRING"
         attribute "hhName", "STRING"
-		attribute "colormode", "enum", ["XY", "CT", "HS"]
+	attribute "colormode", "enum", ["XY", "CT", "HS"]
         attribute "effect", "enum", ["none", "colorloop"]
 	}
 
@@ -86,31 +81,35 @@ metadata {
 				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
 			}
 
-		}
+	}
 
-		/* reset / refresh */	
-		standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
-		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
+	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
+	}
+
+	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+	}
         
-        /* Color Temperature */
-		valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-			state "colorTemperature", label: 'Color Temp:  ${currentValue}'
+	valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+		state "colorTemperature", label: 'Color Temp:  ${currentValue}'
         }
+
         controlTile("colorTemperature", "device.colorTemperature", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
         	state "setCT", action:"setColorTemperature"
-		}
+	}
         
-        /* alert / flash */
-		standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-single"
-		}
-		valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-            state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
+	standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-single"
+	}
+		
+	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+        	state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
         }     
+
+	valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+		state "default", label: 'Reachable: ${currentValue}'
+	}
 
 	}
 	main(["rich-control"])
@@ -143,7 +142,7 @@ def installed() {
 def updated(){
 	log.debug "Updated Preferences"
 	sendEvent(name: "transitionTime", value: tt)
-    initialize()
+   	initialize()
 }
 
 def initialize() {
