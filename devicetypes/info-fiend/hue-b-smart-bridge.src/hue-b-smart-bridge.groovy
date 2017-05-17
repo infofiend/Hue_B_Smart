@@ -87,7 +87,8 @@ def discoverItems(inItems = null) {
 	log.trace "Bridge discovering all items on Hue hub."
 	
 	if (state.initialize != true ) { initialize() }
- 
+ 	if (state.host == null ) { initialize() }
+	
 	def host = state.host
 	def username = state.userName
 
