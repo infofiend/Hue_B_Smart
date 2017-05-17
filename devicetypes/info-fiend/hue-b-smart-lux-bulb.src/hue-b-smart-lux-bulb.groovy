@@ -88,6 +88,10 @@ metadata {
 		standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
 		}
+
+		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+			state "default", label: 'Reachable: ${currentValue}'
+		}
         
         valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
             state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
@@ -95,7 +99,7 @@ metadata {
 
 	}
 	main(["rich-control"])
-	details(["rich-control","flash","reset", "refresh", "transitiontime"])
+	details(["rich-control","flash","reset", "refresh", "transitiontime", "reachable"])
 }
 
 
