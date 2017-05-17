@@ -12,24 +12,23 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Version 1 TMLeafs Fork
  *
- *	Version 1.1 -- Conformed DTHs
-
  */
 preferences {
 	input("tt", "integer", defaultValue: 4, title: "Time it takes for the lights to transition (default: 4 = 400ms)")
-    input("notiSetting", "enum", title: "Notifications", description: "Level of Notifications for this Device?",
+    	input("notiSetting", "enum", title: "Notifications", description: "Level of Notifications for this Device?",
 	    options: ["All", "Only On / Off", "None"] )
 }  
  
 metadata {
 	definition (name: "Hue B Smart Lux Group", namespace: "info_fiend", author: "Anthony Pastor") {
-		capability "Switch Level"
-		capability "Actuator"
-		capability "Switch"
-		capability "Polling"
-		capability "Refresh"
-		capability "Sensor"
+	capability "Switch Level"
+	capability "Actuator"
+	capability "Switch"
+	capability "Polling"
+	capability "Refresh"
+	capability "Sensor"
         capability "Configuration"
                 
         command "reset"
@@ -42,10 +41,10 @@ metadata {
         command "scaleLevel"
                        
         attribute "lights", "STRING"       
-		attribute "transitionTime", "NUMBER"
-		attribute "bri", "number"
+	attribute "transitionTime", "NUMBER"
+	attribute "bri", "number"
         attribute "level", "number"
-		attribute "on", "string"
+	attribute "on", "string"
         attribute "groupID", "string"
         attribute "host", "string"
         attribute "username", "string"
@@ -64,34 +63,30 @@ metadata {
 				attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-multi", backgroundColor:"#79b821", nextState:"turningOff"
 				attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-multi", backgroundColor:"#ffffff", nextState:"turningOn"
 			}
-            
-            
-			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+            		tileAttribute ("device.level", key: "SLIDER_CONTROL") {
 				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
-            }
+			}
+	}
 
-			
-		}
-
-		/* reset / refresh */	
-		standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-multi"
-		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
+	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-multi"
+	}
+	
+	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+	}
         
-        /* Flash / Alert */
-		standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
-		}
-        valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+      	standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
+	}
+        
+	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
             state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
         }
 
-		valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-			state "default", label: 'GroupID: ${currentValue}'
-		}	
+	valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+		state "default", label: 'GroupID: ${currentValue}'
+	}	
 
 	}
 	main(["rich-control"])
