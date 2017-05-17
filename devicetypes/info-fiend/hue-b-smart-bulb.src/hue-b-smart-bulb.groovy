@@ -12,23 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Version 1.1 -- fixed Hue and Saturation updates, added hue and saturation tiles & sliders, added Flash tile, conformed device layout with Hue Group DTH, 
- * 					and added setHuefrom100 function (for using a number 1-100 in CoRE - instead of the 1-360 that CoRE normally uses)
- *
- *	Version 1.2 -- Conformed DTHs
- *
- *	Version 1.2b -- attribute colorTemp is now colorTemperature - changing colorTemperature no longer turns on device
- *
- *	Version 1.3 -- re-added setColor; hue slider range now 1-100; now always sends xy color values to Hue Hub; Sliders now conform to the colormode; 
- * 			   	turning colorLoop off now returns to the previous colormode and settings. 
- *
- *	Version 1.3b -- When light is off, adjustments to hue / saturation or colorTemp (WITHOUT a level or switch command) will not be sent to Hue Hub.  Instead, the DTH will save
- *				those settings and apply if light is then turned on.  
- *
- *  Version 1.4 -- Moved scaleLevel from HBS service manager to DTH (less network traffic)
- *				-- Removed many log entries (log now significantly less chatty)
- *				-- Fixed rounding error for displayed Hue and Saturation values 
- * 				-- Fixed saturation calculation in color conversion 
+ *	Version 1 TMLeafs Fork
  *
  */
 preferences {
@@ -39,14 +23,14 @@ preferences {
  
 metadata {
 	definition (name: "Hue B Smart Bulb", namespace: "info_fiend", author: "Anthony Pastor") {
-		capability "Switch Level"
-		capability "Actuator"
-		capability "Color Control"
+	capability "Switch Level"
+	capability "Actuator"
+	capability "Color Control"
         capability "Color Temperature"
-		capability "Switch"
-		capability "Polling"
-		capability "Refresh"
-		capability "Sensor"
+	capability "Switch"
+	capability "Polling"
+	capability "Refresh"
+	capability "Sensor"
         capability "Configuration"
         
         command "setAdjustedColor"
@@ -55,9 +39,9 @@ metadata {
         command "flash"
         command "flash_off"
         command "colorloopOn"
-		command "colorloopOff"
+	command "colorloopOff"
         command "updateStatus"
-		command "getHextoXY"
+	command "getHextoXY"
         command "colorFromHSB"
         command "colorFromHex"
         command "colorFromXY"
@@ -77,18 +61,18 @@ metadata {
         command "applyEnergize"
         command "scaleLevel"
 
- 		attribute "colorTemperature", "number"
-		attribute "bri", "number"
-		attribute "saturation", "number"
+ 	attribute "colorTemperature", "number"
+	attribute "bri", "number"
+	attribute "saturation", "number"
         attribute "level", "number"
-		attribute "reachable", "string"
-		attribute "hue", "number"
-		attribute "on", "string"
+	attribute "reachable", "string"
+	attribute "hue", "number"
+	attribute "on", "string"
         attribute "transitionTime", "NUMBER"
         attribute "hueID", "STRING"
         attribute "host", "STRING"
         attribute "hhName", "STRING"
-		attribute "colormode", "enum", ["XY", "CT", "HS", "LOOP"]
+	attribute "colormode", "enum", ["XY", "CT", "HS", "LOOP"]
         attribute "effect", "enum", ["none", "colorloop"]
 	}
 
@@ -110,76 +94,74 @@ metadata {
 			tileAttribute ("device.color", key: "COLOR_CONTROL") {
 				attributeState "color", action:"setAdjustedColor"
 			}
-		}
+	}
 
         standardTile("saturationLabel", "saturationLabel", height:1, width:1, decoration: "flat", inactiveLabel: true) {
-            state "default", label:"Sat", unit:"", icon: ""
+        	state "default", label:"Sat", unit:"", icon: ""
         }
         
         controlTile("saturationSliderControl", "device.saturation", "slider", height: 1, width: 4, inactiveLabel: false) {
-            state "saturation", action:"color control.setSaturation"
+        	state "saturation", action:"color control.setSaturation"
         }
         
         valueTile("saturationValue", "device.saturation", inactiveLabel: true, height:1, width:1, decoration: "flat") {
-            state "default", label:'${currentValue}%', unit:""
+        	state "default", label:'${currentValue}%', unit:""
         }
               
         standardTile("hueLabel", "hueLabel", height:1, width:1, decoration: "flat", inactiveLabel: true) {
-            state "default", label:"Hue", unit:"", icon: ""
+        	state "default", label:"Hue", unit:"", icon: ""
         }
         
         controlTile("hueSliderControl", "device.hue", "slider", height: 1, width: 4, inactiveLabel: false) {
-            state "hue", action:"color control.setHue"
+        	state "hue", action:"color control.setHue"
         }
         
         valueTile("hueValue", "device.hue", inactiveLabel: true, height:1, width:1, decoration: "flat") {
-            state "default", label:'${currentValue}%', unit:""
+        	state "default", label:'${currentValue}%', unit:""
         }
         
-		/* reset / refresh */	
-		standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
-		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
+	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
+	}
+
+	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+	}
         
-        /* Color Temperature */
-		standardTile("CTLabel", "CTLabel", height:1, width:1, decoration: "flat", inactiveLabel: true) {
-            state "default", label:"CT", unit:"", icon: ""
+	standardTile("CTLabel", "CTLabel", height:1, width:1, decoration: "flat", inactiveLabel: true) {
+        	state "default", label:"CT", unit:"", icon: ""
         }
     
         controlTile("colorTemperature", "device.colorTemperature", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
         	state "setCT", action:"setColorTemperature"
-		}
+	}
         
         valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
-			state "colorTemperature", label: '${currentValue}'
+		state "colorTemperature", label: '${currentValue}'
         }
         
-        /* alert / flash */
-		standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-single"
-		}
-        
-        /* misc */
- 		
-		valueTile("colormode", "device.colormode", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-			state "default", label: 'Colormode: ${currentValue}'
-		}
+	standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-single"
+	}
+
+        valueTile("colormode", "device.colormode", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+		state "default", label: 'Colormode: ${currentValue}'
+	}
         
         valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-			state "default", label: 'reachable: ${currentValue}'
-		}
+		state "default", label: 'reachable: ${currentValue}'
+	}
+
         valueTile("transitiontime", "device.transitiontime", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
-            state "transitiontime", label: 'Transitiontime is ${currentValue}'
+            	state "transitiontime", label: 'Transitiontime is ${currentValue}'
         }
         
         standardTile("toggleColorloop", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
-			state "colorloop", label:"Color Loop On", action:"colorloopOff", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-on.png"
-            state "none", label:"Color Loop Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-off.png"
-            state "updating", label:"Working", icon: "st.secondary.secondary"
-		}
+		state "colorloop", label:"Color Loop On", action:"colorloopOff", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-on.png"
+        	state "none", label:"Color Loop Off", action:"colorloopOn", nextState: "updating", icon:"https://raw.githubusercontent.com/infofiend/Hue-Lights-Groups-Scenes/master/smartapp-icons/hue/png/colorloop-off.png"
+        	state "updating", label:"Working", icon: "st.secondary.secondary"
+	}
+
 	}
 	main(["rich-control"])
 	details(["rich-control", "saturationLabel", "saturationSliderControl", "saturationValue", "hueLabel", "hueSliderControl", "hueValue", "CTLabel", "colorTemperature", "valueCT", "colormode", "reachable", "flash", "toggleColorloop", "reset","refresh", "transitiontime"])	//  "host", "username",
