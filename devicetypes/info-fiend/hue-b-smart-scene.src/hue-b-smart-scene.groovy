@@ -65,8 +65,8 @@ metadata {
 	       	state "sceneID", label: 'SceneID: ${currentValue} ' //, action:"getSceneID" //, backgroundColor:"#BDE5F2" //, nextState: "State2"
     	}
 
-		standardTile("updateScene", "device.updateScene", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-    	   	state "Ready", label: 'Update<br>Scene', action:"updateSceneFromDevice", backgroundColor:"#FBB215"
+		standardTile("updateScene", "device.updateScene", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
+    	   	state "Ready", label: 'Update Scene', action:"updateSceneFromDevice", backgroundColor:"#FBB215"
 	    }
 	
  		valueTile("lights", "device.lights", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
@@ -81,12 +81,13 @@ metadata {
 			state "scheduleId", label: 'Schedule: ${currentValue} ' //, action:"getScheduleID"
         }
         valueTile("schedule", "device.schedule",  width: 4, height: 2) {	//decoration: "flat"
-    	   	state "off", label: '.          QFix Off             .', action:"quickFix", backgroundColor:"#BDE5F2" //, nextState: "Enabled"
-            state "on", label: ' .         QFix On              .', action:"noFix", backgroundColor:"#FFA500"//, defaultState: "Disabled"
+    	   	state "off", label: 'QFix Off', action:"quickFix", backgroundColor:"#BDE5F2" //, nextState: "Enabled"
+            state "on", label: 'QFix On', action:"noFix", backgroundColor:"#FFA500"//, defaultState: "Disabled"
 	    }
         
     main "switch"
-    details (["switch", "lights", "lightStates", "schedule", "scheduleId", "sceneID", "updateScene", "refresh"]) 	// "scheduleId",
+    //details (["switch", "lights", "lightStates", "schedule", "scheduleId", "sceneID", "updateScene", "refresh"]) 	// "scheduleId",
+	details (["switch", "lights", "updateScene", "refresh","sceneID"]) 	// "scheduleId",
 	}
 }
 
