@@ -274,13 +274,13 @@ def updateSceneFromDevice() {
 //    }
 
     	updateScene()
-//		log.debug "Executing 'updateScene' for ${device.label} using sceneID ${myScene}."
+		//log.debug "Executing 'updateScene' for ${device.label} using sceneID ${myScene}."
 	}
 }
 
 def updateStatus(type, param, val) {
 
-	//log.debug "updating status: ${type}:${param}:${val}"
+	log.debug "updating status: ${type}:${param}:${val}"
 	if (type == "scene") {
 		if (param == "lights") {
 
