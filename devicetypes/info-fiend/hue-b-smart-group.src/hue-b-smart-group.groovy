@@ -156,9 +156,14 @@ metadata {
 			state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
 		}
 
-		valueTile("colormode", "device.colormode", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+		valueTile("colormode", "device.colormode", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 			state "default", label: 'Colormode: ${currentValue}'
 		}
+
+		valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+			state "default", label: 'GroupID: ${currentValue}'
+		}		
+
 		valueTile("transitiontime", "device.transitiontime", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
             state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
         }
@@ -170,7 +175,7 @@ metadata {
 		}
 	}
 	main(["rich-control"])
-	details(["rich-control","colormode","valueHue","hue","valueSat","saturation","valueCT","colorTemperature","toggleColorloop","transitiontime","flash","reset","refresh"]) //  "host", "username", 
+	details(["rich-control","valueHue","hue","valueSat","saturation","valueCT","colorTemperature","colormode", "groupID", "toggleColorloop","transitiontime","flash","reset","refresh"]) //  "host", "username", 
 }
 
 private configure() {		
