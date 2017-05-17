@@ -114,7 +114,7 @@ metadata {
 
 	}
 	main(["rich-control"])
-	details(["rich-control","valueCT","colorTemp","reset","flash","refresh", "transitiontime"])
+	details(["rich-control","valueCT","colorTemp", "colorTemperature","reset","flash","refresh", "transitiontime"])
 }
 
 void installed() {
