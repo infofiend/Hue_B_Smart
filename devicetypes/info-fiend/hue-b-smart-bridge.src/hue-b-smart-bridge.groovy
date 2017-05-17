@@ -12,31 +12,27 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Version 1.0
- *	Version 1.1 - added discoverBulbs, discoverGroups, discoverScenes, discoverSchedules, pollItems, pollBulbs, pollGroups, pollScenes, pollSchedules.
- * 				- Changed device to multiAttribute tile; added bridge & health check capability; added status attribute; added device-enroll
- *              - Receipt of successful change to a Group will now cause ST to immediately update status of all bulbs in that group!!!
+ *	Version 1 TMLeafs Fork 
  *
  */
 metadata {
 	definition (name: "Hue B Smart Bridge", namespace: "info_fiend", author: "Anthony Pastor") {
-		capability "Actuator"
-		capability "Bridge"
-		capability "Health Check"
+	capability "Actuator"
+	capability "Bridge"
+	capability "Health Check"
 
 
-		attribute "serialNumber", "string"
-		attribute "networkAddress", "string"
-		attribute "status", "string"
-		attribute "username", "string"
-		attribute "host", "string"
+	attribute "serialNumber", "string"
+	attribute "networkAddress", "string"
+	attribute "status", "string"
+	attribute "username", "string"
+	attribute "host", "string"
         
-		command "discoverItems"
+	command "discoverItems"
         command "discoverBulbs"
         command "discoverGroups"
         command "discoverScenes"
         command "discoverSchedules"
-        
         command "pollItems"
         command "pollBulbs"
         command "pollGroups"
@@ -50,24 +46,23 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-        standardTile("bridge", "device.username", width: 6, height: 4) {
-        	state "default", label:"Hue Bridge", inactivelabel:true, icon:"st.Lighting.light99-hue", backgroundColor: "#F3C200"
+        	standardTile("bridge", "device.username", width: 6, height: 4) {
+        		state "default", label:"Hue Bridge", inactivelabel:true, icon:"st.Lighting.light99-hue", backgroundColor: "#F3C200"
         }
-		main "bridge"
-		details "bridge"
+
+	main "bridge"
+	details "bridge"
 	}
 }
 
 void installed() {
 	log.debug "Installed with settings: ${settings}"
-	//sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
-
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
 	initialize()
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
-	
 	initialize()
 }
 
