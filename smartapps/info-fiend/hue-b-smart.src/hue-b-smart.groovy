@@ -12,10 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	(beta) version .9
- *	(beta) version .9a - added submitOnChange() to bulb, group, and scene selection pages
- *  (beta) version .9b - added Hue Ambience bulbs (thanks @tmleafs!); fixed scaleLevel; conformed DTHs 
- *  (beta) version .9c - 3/28/17: changed listing of names from device.name to device.label to conform with recent ST changes
+ *	Version 1 TMLeafs Fork
  *
  */
  
@@ -31,20 +28,19 @@ definition(
 )
 
 preferences {
-    page(name:"Bridges", content: "bridges")
-    page(name:"linkButton", content: "linkButton")
-    page(name:"linkBridge", content: "linkBridge")
-    page(name:"manageBridge", content: "manageBridge")
+    	page(name:"Bridges", content: "bridges")
+    	page(name:"linkButton", content: "linkButton")
+   	page(name:"linkBridge", content: "linkBridge")
+   	page(name:"manageBridge", content: "manageBridge")
 	page(name:"chooseBulbs", content: "chooseBulbs")
  	page(name:"chooseScenes", content: "chooseScenes")
  	page(name:"chooseGroups", content: "chooseGroups")
-    page(name:"chooseSchedules", content: "chooseSchedules")
-    page(name:"createQuickfixSch", content: "createQuickfixSch")
-    page(name:"enableQF", content: "enableQF")
-//    page(name:"deleteQuickfixSch", content: "deleteQuickfixSch")
-    page(name:"deleteBridge", content: "deleteBridge")
-    
-    page(name:"defaultTransition", title:"Default Transition", content:"defaultTransition", refreshTimeout:5)
+    	page(name:"chooseSchedules", content: "chooseSchedules")
+    	page(name:"createQuickfixSch", content: "createQuickfixSch")
+    	page(name:"enableQF", content: "enableQF")
+	//page(name:"deleteQuickfixSch", content: "deleteQuickfixSch")
+    	page(name:"deleteBridge", content: "deleteBridge")
+        page(name:"defaultTransition", title:"Default Transition", content:"defaultTransition", refreshTimeout:5)
 }
 
 def manageBridge(params) {
