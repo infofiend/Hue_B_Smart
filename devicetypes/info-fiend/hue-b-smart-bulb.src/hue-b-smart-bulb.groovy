@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	Version 1 TMLeafs Fork
+ *	1.1 Fixed Transition Time Display Bug
  *
  */
 preferences {
@@ -152,8 +153,8 @@ metadata {
 		state "default", label: 'reachable: ${currentValue}'
 	}
 
-        valueTile("transitiontime", "device.transitiontime", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
-            	state "transitiontime", label: 'Transitiontime is ${currentValue}'
+        valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
+            	state "transitionTime", label: 'Transitiontime is ${currentValue}'
         }
         
         standardTile("toggleColorloop", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
