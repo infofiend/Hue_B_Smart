@@ -14,7 +14,8 @@
  *
  *
  *	Version 1 TMLeafs Fork
- *
+ *	1.1 Fixed Transition Time Display Bug
+ *	
  */
 preferences {
 	input("tt", "integer", defaultValue: 4, title: "Time it takes for the lights to transition (default: 4 = 400ms)")  
@@ -145,8 +146,8 @@ metadata {
 		state "default", label: 'GroupID: ${currentValue}'
 	}		
 
-	valueTile("transitiontime", "device.transitiontime", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
-        	state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
+	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
+        	state "transitionTime", label: 'Transitiontime is ${currentValue}'
         }
 
 	standardTile("toggleColorloop", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
