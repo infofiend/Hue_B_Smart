@@ -17,7 +17,7 @@
  */
 definition(
         name: "Hue B Smart",
-        namespace: "tmleafs",
+        namespace: "info_fiend,
         author: "anthony pastor",
         description: "The Smartest Hue Control App for SmartThings - total control of bulbs, scenes, groups, and schedules",
         category: "My Apps",
@@ -1434,10 +1434,13 @@ def getCommandData(id) {
     return result
 }
 
-def getGLightsDNI(groupId) {
+def getGLightsDNI(groupId,bridgemac) {
 	log.trace "getGLightsDNI( from Group ${groupId} )"
-    def mac = state.mac
+    //def mac = state.mac
+    def mac = bridgemac
+    //log.debug "${mac}"
     def bridge = getBridge(mac)
+  
     def groupLights = bridge.value.groups[groupId].lights
     log.debug "bridge.value.groups[groupId].lights = ${groupLights}"
     
