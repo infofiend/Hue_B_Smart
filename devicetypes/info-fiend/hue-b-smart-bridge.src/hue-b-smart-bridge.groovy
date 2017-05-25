@@ -356,7 +356,7 @@ def parse(String description) {
 				
 				state.groups = groups
 				
-	            //body.scenes?.each { k, v -> 
+	            body.scenes?.each { k, v -> 
                    	//log.trace "k=${k} and v=${v}"
                         				
                   	scenes[k] = [id: k, label: v.name, type: "scene", lights: v.lights]
