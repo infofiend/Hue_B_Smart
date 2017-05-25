@@ -22,7 +22,7 @@ preferences {
 }  
  
 metadata {
-	definition (name: "Hue B Smart Lux Group", namespace: "info_fiend", author: "Anthony Pastor") {
+	definition (name: "Hue B Smart Lux Group", namespace: "tmleafs", author: "Anthony Pastor") {
 	capability "Switch Level"
 	capability "Actuator"
 	capability "Switch"
