@@ -24,7 +24,7 @@ preferences {
 	 }  
  
 metadata {
-	definition (name: "Hue B Smart Group", namespace: "tmleafs", author: "Anthony Pastor") {
+	definition (name: "Hue B Smart Group", namespace: "info_fiend", author: "Anthony Pastor") {
 	capability "Switch Level"
 	capability "Actuator"
 	capability "Color Control"
