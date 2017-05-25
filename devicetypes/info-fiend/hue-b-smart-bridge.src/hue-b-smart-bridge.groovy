@@ -16,7 +16,7 @@
  *
  */
 metadata {
-	definition (name: "Hue B Smart Bridge", namespace: "tmleafs", author: "Anthony Pastor") {
+	definition (name: "Hue B Smart Bridge", namespace: "info_fiend", author: "Anthony Pastor") {
 	capability "Actuator"
 	capability "Bridge"
 	capability "Health Check"
@@ -268,7 +268,7 @@ def parse(String description) {
 				body.each{
 					it.success.each { k, v ->
 						def spl = k.split("/")
-						log.debug "k = ${k}, split1 = ${spl[1]}, split2 = ${spl[2]}, split3 = ${spl[3]}, split4= ${spl[4]}, value = ${v}"                            
+						//log.debug "k = ${k}, split1 = ${spl[1]}, split2 = ${spl[2]}, split3 = ${spl[3]}, split4= ${spl[4]}, value = ${v}"                            
 						def devId = ""
                         def d
                         def groupScene
@@ -306,17 +306,23 @@ def parse(String description) {
                     	// GROUPS
 						} else if (spl[1] == "groups" && spl[2] != 0 ) {    
             	        	devId = bridge.value.mac + "/" + spl[1].toUpperCase()[0..-2] + spl[2]
-        	    	        log.debug "GROUP: devId = ${devId}"                            
+        	    	        //log.debug "GROUP: devId = ${devId}"                            
 	
 							d = parent.getChildDevice(devId)
 
 							d.updateStatus(spl[3], spl[4], v) 
 							
-                            //def gLights = []
-                            //gLights = parent.getGLightsDNI(spl[2])
-                            //gLights.each { gl ->
-                            //	gl.updateStatus("state", spl[4], v) 
-                            //}
+                            def gLights = []
+                            def thisbridge = bridge.value.mac
+                            log.debug "This Bridge ${thisbridge}"
+                            gLights = parent.getGLightsDNI(spl[2], thisbridge)
+                            gLights.each { gl ->
+                             
+                            if(gl != null){
+                            	gl.updateStatus("state", spl[4], v)
+                                log.debug "GLight ${gl}"
+				}
+                            }
                             
 						// LIGHTS		
 						} else if (spl[1] == "lights") {
@@ -357,7 +363,7 @@ def parse(String description) {
 				state.groups = groups
 				
 	            body.scenes?.each { k, v -> 
-                   	log.trace "k=${k} and v=${v}"
+                   	//log.trace "k=${k} and v=${v}"
                         				
                   	scenes[k] = [id: k, label: v.name, type: "scene", lights: v.lights]
                             
@@ -366,13 +372,13 @@ def parse(String description) {
                 state.scenes = scenes
                     
                 body.schedules?.each { k, v -> 
-                  	log.trace "schedules k=${k} and v=${v}"
+                  	//log.trace "schedules k=${k} and v=${v}"
                    	
                    	def schCommand = v.command.address
-                  log.debug "schCommand = ${schCommand}"
+                  //log.debug "schCommand = ${schCommand}"
                 
                     def splCmd = schCommand.split("/")
-                 log.debug "splCmd[1] = ${splCmd[1]} / splCmd[2] = ${splCmd[2]} / splCmd[3] = ${splCmd[3]} / splCmd[4] = ${splCmd[4]}"                        
+                 //log.debug "splCmd[1] = ${splCmd[1]} / splCmd[2] = ${splCmd[2]} / splCmd[3] = ${splCmd[3]} / splCmd[4] = ${splCmd[4]}"                        
                     def schGroupId = splCmd[4] 
 					log.debug "schGroupId = ${schGroupId}"
 //                 	def schSceneId = bridge.value.mac + "/SCENES" + ${v.command.body.scene}
