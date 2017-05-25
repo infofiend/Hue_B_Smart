@@ -16,7 +16,7 @@
  *
  */
 metadata {
-	definition (name: "Hue B Smart Scene", namespace: "tmleafs", author: "Anthony Pastor") {
+	definition (name: "Hue B Smart Scene", namespace: "info_fiend", author: "Anthony Pastor") {
 	capability "Actuator"
         capability "Switch"
         capability "Momentary"
