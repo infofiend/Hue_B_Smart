@@ -24,7 +24,7 @@ preferences {
 // for the UI
 metadata {
 	// Automatically generated. Make future change here.
-	definition (name: "Hue B Smart Lux Bulb", namespace: "info_fiend", author: "Anthony Pastor") {
+	definition (name: "Hue B Smart Lux Bulb", namespace: "tmleafs", author: "Anthony Pastor") {
 	capability "Switch Level"
 	capability "Actuator"
 	capability "Switch"
