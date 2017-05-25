@@ -264,11 +264,11 @@ def parse(String description) {
             
 			/* responses from bulb/group/scene/schedule command. Figure out which device it is, then pass it along to the device. */
 			if (body[0] != null && body[0].success != null) {
-            	//log.trace "${body[0].success}"
+            	log.trace "${body[0].success}"
 				body.each{
 					it.success.each { k, v ->
 						def spl = k.split("/")
-						//log.debug "k = ${k}, split1 = ${spl[1]}, split2 = ${spl[2]}, split3 = ${spl[3]}, split4= ${spl[4]}, value = ${v}"                            
+						log.debug "k = ${k}, split1 = ${spl[1]}, split2 = ${spl[2]}, split3 = ${spl[3]}, split4= ${spl[4]}, value = ${v}"                            
 						def devId = ""
                         def d
                         def groupScene
@@ -357,7 +357,7 @@ def parse(String description) {
 				state.groups = groups
 				
 	            body.scenes?.each { k, v -> 
-                   	//log.trace "k=${k} and v=${v}"
+                   	log.trace "k=${k} and v=${v}"
                         				
                   	scenes[k] = [id: k, label: v.name, type: "scene", lights: v.lights]
                             
@@ -366,13 +366,13 @@ def parse(String description) {
                 state.scenes = scenes
                     
                 body.schedules?.each { k, v -> 
-                  	//log.trace "schedules k=${k} and v=${v}"
+                  	log.trace "schedules k=${k} and v=${v}"
                    	
                    	def schCommand = v.command.address
-                  //log.debug "schCommand = ${schCommand}"
+                  log.debug "schCommand = ${schCommand}"
                 
                     def splCmd = schCommand.split("/")
-                 //log.debug "splCmd[1] = ${splCmd[1]} / splCmd[2] = ${splCmd[2]} / splCmd[3] = ${splCmd[3]} / splCmd[4] = ${splCmd[4]}"                        
+                 log.debug "splCmd[1] = ${splCmd[1]} / splCmd[2] = ${splCmd[2]} / splCmd[3] = ${splCmd[3]} / splCmd[4] = ${splCmd[4]}"                        
                     def schGroupId = splCmd[4] 
 					log.debug "schGroupId = ${schGroupId}"
 //                 	def schSceneId = bridge.value.mac + "/SCENES" + ${v.command.body.scene}
