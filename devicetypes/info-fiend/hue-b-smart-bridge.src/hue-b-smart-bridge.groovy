@@ -314,7 +314,7 @@ def parse(String description) {
 							
                             def gLights = []
                             def thisbridge = bridge.value.mac
-                            log.debug "This Bridge ${thisbridge}"
+                            //log.debug "This Bridge ${thisbridge}"
                             gLights = parent.getGLightsDNI(spl[2], thisbridge)
                             gLights.each { gl ->
                              
