@@ -17,7 +17,7 @@
  */
 definition(
         name: "Hue B Smart",
-        namespace: "info_fiend,
+        namespace: "info_fiend",
         author: "anthony pastor",
         description: "The Smartest Hue Control App for SmartThings - total control of bulbs, scenes, groups, and schedules",
         category: "My Apps",
