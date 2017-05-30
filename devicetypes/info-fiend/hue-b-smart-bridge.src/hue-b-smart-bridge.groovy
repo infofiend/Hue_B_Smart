@@ -49,9 +49,18 @@ metadata {
         	standardTile("bridge", "device.username", width: 6, height: 4) {
         		state "default", label:"Hue Bridge", inactivelabel:true, icon:"st.Lighting.light99-hue", backgroundColor: "#F3C200"
         }
-
+		valueTile("idNumber", "device.idNumber", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
+			state "default", label:'ID: ${currentValue}'
+		}
+		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
+			state "default", label:'IP: ${currentValue}'
+		}
+		valueTile("username", "device.username", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
+			state "default", label:'username: ${currentValue}'
+		}
+		
 	main "bridge"
-	details "bridge"
+	details(["bridge", "idNumber", "networkAddress", "username"])	
 	}
 }
 
