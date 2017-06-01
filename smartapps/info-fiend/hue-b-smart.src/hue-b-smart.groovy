@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	Version 1 TMLeafs Fork
+ *	Version 1.1 Thanks to Detmer for changes and testing
  *
  */
 definition(
@@ -1392,45 +1393,23 @@ private sendDeveloperReq(ip, mac) {
 /**
  * UTILITY FUNCTIONS
  **/
-/*def getCommandData(id) {
-    def ids = id.split("/")
-    def bridge = getBridge(ids[0])
-    def bridgeDev = getChildDevice(ids[0])
-
-    def result = [ip: "${bridgeDev.currentValue("networkAddress")}:80",
-                  username: "${bridgeDev.currentValue("username")}",
-                  deviceId: "${ids[1] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"}",
-    ]
-    return result
-}*/
-
 def getCommandData(id) {
     def ids = id.split("/")
-    def devId
-    def ipAddr
-    def userName
- 
-    log.debug("In getCommandData()")
-    log.debug("id = ${id}")
+    //def bridge = getBridge(ids[0])
+    def bridgeDev = getChildDevice(ids[0])
+    def result;
     
     if( id.contains("/") ) {
-       devId = ids[1] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"
+        result = [ip: "${bridgeDev.currentValue("networkAddress")}:80",
+                  username: "${bridgeDev.currentValue("username")}",
+                  deviceId: "${ids[1] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"}", ]
     }
     else {
-       devId = ids
+        result = [ip: "${bridgeDev.currentValue("networkAddress")}",
+                  username: "${bridgeDev.currentValue("username")}",
+                  deviceId: "${ids[0] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"}", ]
     }
-    
-    if( state.host ) {
-       def url = state.host.split(":")
-       ipAddr = url[0] + ":80"
-       userName = state.user
-    }
-    def result = [ip: "${ipAddr}",
-                  username: "${userName}",
-                  deviceId: "${devId}",  ]
-    
-    log.debug("Out getCommandData = ${result}")
-    
+   
     return result
 }
 
