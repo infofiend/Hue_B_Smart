@@ -390,7 +390,7 @@ def parse(String description) {
                     def splCmd = schCommand.split("/")
                  //log.debug "splCmd[1] = ${splCmd[1]} / splCmd[2] = ${splCmd[2]} / splCmd[3] = ${splCmd[3]} / splCmd[4] = ${splCmd[4]}"                        
                     def schGroupId = splCmd[4] 
-					log.debug "schGroupId = ${schGroupId}"
+					//log.debug "schGroupId = ${schGroupId}"
 //                 	def schSceneId = bridge.value.mac + "/SCENES" + ${v.command.body.scene}
     	        
     	            schedules[k] = [id: k, name: v.name, type: "schedule", sceneId: v.command.body.scene, groupId: schGroupId, status: v.status]
