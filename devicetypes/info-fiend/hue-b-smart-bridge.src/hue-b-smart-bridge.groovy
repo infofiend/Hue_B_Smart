@@ -12,7 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Version 1 TMLeafs Fork 
+ *	Version 1 TMLeafs Fork
+ *	Version 1.1 Thanks to Detmer for changes and testing
  *
  */
 metadata {
@@ -91,12 +92,12 @@ def discoverItems(inItems = null) {
 	log.trace "Bridge discovering all items on Hue hub."
 	
 	if (state.initialize != true ) { initialize() }
- 	if (state.host == null ) { initialize() }
+ 	if (state.user == null ) { initialize() }
 	
 	def host = state.host
 	def username = state.userName
 
-        log.debug "*********** ${host} ********"
+  	log.debug "*********** ${host} ********"
 	log.debug "*********** ${username} ********"
 	def result 
         
