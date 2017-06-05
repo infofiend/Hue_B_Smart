@@ -49,8 +49,8 @@ metadata {
 
 	tiles (scale: 2) {
 	    multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
-			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#79b821"
+		tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+		attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#00a0dc"
 			}
 	}
     
