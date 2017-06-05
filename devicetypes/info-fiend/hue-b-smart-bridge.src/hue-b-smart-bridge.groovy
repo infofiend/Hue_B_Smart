@@ -48,7 +48,7 @@ metadata {
 
 	tiles(scale: 2) {
         	standardTile("bridge", "device.username", width: 6, height: 4) {
-        		state "default", label:"Hue Bridge", inactivelabel:true, icon:"st.Lighting.light99-hue", backgroundColor: "#F3C200"
+        		state "default", label:"Hue Bridge", inactivelabel:true, icon:"st.Lighting.light99-hue", backgroundColor: "#cccccc"
         }
 		valueTile("idNumber", "device.idNumber", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
 			state "default", label:'ID: ${currentValue}'
