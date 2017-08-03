@@ -380,9 +380,9 @@ private updateStatus(action, param, val) {
                 break
             case "alert":
             	if (val == "none") {
-            		flash_off() 
+            		log.debug "Not Flashing"            		
                 } else {
-                	flash()
+                	log.debug "Flashing"
                 }
                 break
 			case "lights":
