@@ -1233,22 +1233,24 @@ def itemDiscoveryHandler(evt) {
    	            def groupId = it.deviceNetworkId.split("/")[1] - "GROUP"
            	    def g = bridge.value.groups[groupId]
 				def groupFromBridge = bridge.value.groups[groupId]
+                if ( groupFromBridge != null ) {
+                    
+                    def gLights = groupFromBridge.lights
+                    def test
                 
-                def gLights = groupFromBridge.lights
-                def test
+                    def colormode = bridge.value.groups[groupId]?.action?.colormode
+                    if (colormode != null) {
                 
-                def colormode = bridge.value.groups[groupId]?.action?.colormode
-                if (colormode != null) {
-                
-					["on", "bri", "sat", "ct", "xy", "effect", "hue", "colormode"].each { p -> 
-       	            	test = bridge.value.groups[groupId].action[p]
-                   	    it.updateStatus("action", p, bridge.value.groups[groupId].action[p])                        
-        			}
-				}else{
-					 ["bri", "on"].each { p ->
-                        it.updateStatus("action", p, bridge.value.groups[groupId].action[p])
-                      }
-				}
+    					["on", "bri", "sat", "ct", "xy", "effect", "hue", "colormode"].each { p -> 
+           	            	test = bridge.value.groups[groupId].action[p]
+                       	    it.updateStatus("action", p, bridge.value.groups[groupId].action[p])                        
+        	    		}
+			    	}else{
+				    	 ["bri", "on"].each { p ->
+                            it.updateStatus("action", p, bridge.value.groups[groupId].action[p])
+                         }
+				    }
+                }
             }
             
             if (it.deviceNetworkId.contains("SCENE")) {
