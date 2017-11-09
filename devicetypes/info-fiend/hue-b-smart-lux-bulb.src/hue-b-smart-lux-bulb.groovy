@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	Version 1 TMLeafs Fork
+ *	1.2 Added command flashCoRe for webcore
  * 
  */
 preferences {
@@ -37,6 +38,7 @@ metadata {
         command "refresh"
         command "updateStatus"
         command "flash"
+	command "flashCoRe"
         command "flash_off"
         command "sendToHub"
         command "setLevel"
@@ -238,6 +240,23 @@ def flash() {
     	[
         	method: "PUT",
 			path: "/api/${commandData.username}/lights/${commandData.deviceId}/state",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [alert: "lselect"]
+		])
+	)
+    
+    runIn(5, flash_off)
+}
+
+def flashCoRe() {
+	log.trace "Hue B Smart Lux Group: flashCoRe(): "
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+	parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
