@@ -14,7 +14,7 @@
  *
  *	Version 1 TMLeafs Fork
  *	1.1 Fixed Transition Time Display Bug
- *
+ *	1.2 Added command flashCoRe for webcore
  */
 preferences {
 	input("tt", "integer", defaultValue: 4, title: "Time it takes for the lights to transition (default: 4 = 400ms)")   
