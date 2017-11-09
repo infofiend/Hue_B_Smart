@@ -15,6 +15,7 @@
  *
  *	Version 1 TMLeafs Fork
  *	1.1 Fixed Transition Time Display Bug
+ *	1.2 Added command flashCoRe for webcore
  *	
  */
 preferences {
@@ -40,6 +41,7 @@ metadata {
         command "refresh"
         command "updateStatus"
         command "flash"
+	command "flashCoRe"	
         command "flash_off"
         command "setColorTemperature"
         command "colorloopOn"
@@ -530,6 +532,23 @@ def reset() {
 
 def flash() {
 	log.trace "Hue B Smart Group: flash(): "
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+	parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [alert: "lselect"]
+		])
+	)
+    
+    runIn(5, flash_off)
+}
+
+def flashCoRe() {
+	log.trace "Hue B Smart Lux Group: flashCoRe(): "
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
