@@ -15,6 +15,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *	Version 1 TMLeafs Fork
+ *	1.2 Added command flashCoRe for webcore
  *
  */
 preferences {
@@ -25,16 +26,17 @@ preferences {
  
 metadata {
 	definition (name: "Hue B Smart White Ambiance", namespace: "info_fiend", author: "Anthony Pastor") {
-		capability "Switch Level"
-		capability "Actuator"
-	    capability "Color Temperature"
-		capability "Switch"
-		capability "Polling"
-		capability "Refresh"
-		capability "Sensor"
+	
+	capability "Switch Level"
+	capability "Actuator"
+	capability "Color Temperature"
+	capability "Switch"
+	capability "Polling"
+	capability "Refresh"
+	capability "Sensor"
         capability "Configuration"
-		capability "Health Check"
-		capability "Light"
+	capability "Health Check"
+	capability "Light"
         
         command "reset"
         command "refresh"
@@ -42,27 +44,28 @@ metadata {
         command "flash_off"
         command "setColorTemperature"        
         command "updateStatus"
-		command "getHextoXY"
+	command "getHextoXY"
         command "sendToHub"
-		command "applyRelax"
+	command "applyRelax"
         command "applyConcentrate"
         command "applyReading"
         command "applyEnergize"
         command "scaleLevel"
 
- 		attribute "colorTemperature", "number"
-		attribute "bri", "number"
-		attribute "sat", "number"
+ 	attribute "colorTemperature", "number"
+	attribute "bri", "number"
+	attribute "sat", "number"
         attribute "level", "number"
-		attribute "reachable", "string"
-		attribute "hue", "number"
-		attribute "on", "string"
+	attribute "reachable", "string"
+	attribute "hue", "number"
+	attribute "on", "string"
         attribute "transitionTime", "NUMBER"
         attribute "hueID", "STRING"
         attribute "host", "STRING"
         attribute "hhName", "STRING"
-		attribute "colormode", "enum", ["XY", "CT", "HS"]
+	attribute "colormode", "enum", ["XY", "CT", "HS"]
         attribute "effect", "enum", ["none", "colorloop"]
+		
 	}
 
 	simulator {
@@ -375,6 +378,23 @@ def flash() {
     	[
         	method: "PUT",
 			path: "/api/${commandData.username}/lights/${commandData.deviceId}/state",
+	        headers: [
+	        	host: "${commandData.ip}"
+			],
+	        body: [alert: "lselect"]
+		])
+	)
+    
+    runIn(5, flash_off)
+}
+
+def flashCoRe() {
+	log.trace "Hue B Smart Lux Group: flashCoRe(): "
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+	parent.sendHubCommand(new physicalgraph.device.HubAction(
+    	[
+        	method: "PUT",
+			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
