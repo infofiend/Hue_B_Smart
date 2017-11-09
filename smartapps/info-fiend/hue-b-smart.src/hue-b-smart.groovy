@@ -1211,70 +1211,74 @@ def itemDiscoveryHandler(evt) {
     		if (it.deviceNetworkId.contains("BULB")) {
 	            log.trace "contains BULB / DNI = ${it.deviceNetworkId}: ${it}"
    	            def bulbId = it.deviceNetworkId.split("/")[1] - "BULB"
-       	        log.debug "bulbId = ${bulbId}" 
+       	        log.debug "bulbId = ${bulbId}"
                 def bBulb = bridge.value.bulbs[bulbId]
                 log.debug "bridge.value.bulbs[bulbId] = ${bBulb}."
-				def type = bBulb.type 	// bridge.value.bulbs[bulbId].type
-               	if (type.equalsIgnoreCase("Dimmable light")) {
-					["reachable", "on", "bri"].each { p -> 
-   	                	it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
-					}
-           	    } else if (type.equalsIgnoreCase("Color Temperature Light")) {
-					["bri", "ct", "reachable", "on"].each { p ->
-                       	it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
-    				}
-			    } else {
-					["reachable", "on", "bri", "hue", "sat", "ct", "xy","effect", "colormode"].each { p -> 
-                   		it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])                        
-					}
-   	            }
+                if ( bBulb != null ) {  // If user removes bulb from hue without removing it from smartthings,
+                                        // getChildDevices() will still return the scene as part of the array as null, so we need to check for it to prevent crashing.
+				    def type = bBulb.type 	// bridge.value.bulbs[bulbId].type
+               	    if (type.equalsIgnoreCase("Dimmable light")) {
+					    ["reachable", "on", "bri"].each { p -> 
+   	                	    it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
+					    }
+           	        } else if (type.equalsIgnoreCase("Color Temperature Light")) {
+					    ["bri", "ct", "reachable", "on"].each { p ->
+                       	    it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
+    				    }
+			        } else {
+					    ["reachable", "on", "bri", "hue", "sat", "ct", "xy","effect", "colormode"].each { p -> 
+                   		    it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
+					    }
+   	                }
+                }
             }
             if (it.deviceNetworkId.contains("GROUP")) {
    	            def groupId = it.deviceNetworkId.split("/")[1] - "GROUP"
            	    def g = bridge.value.groups[groupId]
 				def groupFromBridge = bridge.value.groups[groupId]
-                
-                def gLights = groupFromBridge.lights
-                def test
-                
-                def colormode = bridge.value.groups[groupId]?.action?.colormode
-                if (colormode != null) {
-                
-					["on", "bri", "sat", "ct", "xy", "effect", "hue", "colormode"].each { p -> 
-       	            	test = bridge.value.groups[groupId].action[p]
-                   	    it.updateStatus("action", p, bridge.value.groups[groupId].action[p])                        
-        			}
-				}else{
-					 ["bri", "on"].each { p ->
-                        it.updateStatus("action", p, bridge.value.groups[groupId].action[p])
-                      }
-				}
+                if ( groupFromBridge != null ) {        // If user removes group from hue without removing it from smartthings, 
+                    def gLights = groupFromBridge.lights// getChildDevices() will still return the scene as part of the array as null, so we need to check for it to prevent crashing.
+                    def test
+                    def colormode = bridge.value.groups[groupId]?.action?.colormode
+                    if (colormode != null) {
+    					["on", "bri", "sat", "ct", "xy", "effect", "hue", "colormode"].each { p -> 
+           	            	test = bridge.value.groups[groupId].action[p]
+                       	    it.updateStatus("action", p, bridge.value.groups[groupId].action[p])
+        	    		}
+			    	}else{
+				    	 ["bri", "on"].each { p ->
+                            it.updateStatus("action", p, bridge.value.groups[groupId].action[p])
+                         }
+				    }
+                }
             }
-            
+
             if (it.deviceNetworkId.contains("SCENE")) {
             	log.trace "it.deviceNetworkId contains SCENE = ${it.deviceNetworkId}"
-
 				log.trace "contains SCENE / DNI = ${it.deviceNetworkId}"
     	        def sceneId = it.deviceNetworkId.split("/")[1] - "SCENE"
-        	    log.debug "sceneId = ${sceneId}"     
+        	    log.debug "sceneId = ${sceneId}"
                 def sceneFromBridge = bridge.value.scenes[sceneId]
                 log.trace "sceneFromBridge = ${sceneFromBridge}"
-                def sceneLights = []
-                sceneLights = sceneFromBridge.lights
-                def scenelightStates = sceneFromBridge.lightStates
-	            log.trace "bridge.value.scenes[${sceneId}].lights = ${sceneLights}"                    
-				log.trace "bridge.value.scenes[${sceneId}].lightStates = ${scenelightStates}"                    
+                if ( sceneFromBridge != null ) { // If user removes scene from hue without removing it from smartthings,
+                    def sceneLights = []         // getChildDevices() will still return the scene as part of the array as null, so we need to check for it to prevent crashing.
+                    sceneLights = sceneFromBridge.lights
+                    def scenelightStates = sceneFromBridge.lightStates
 
-            	if (bridge.value.scenes[sceneId].lights) {	
-					it.updateStatus("scene", "lights", bridge.value.scenes[sceneId].lights)
-                }
-                if (scenelightStates) {	
-					it.updateStatus("scene", "lightStates", scenelightStates)
-				//	it.updateStatus("scene", "schedule", "off")                    
-                }
-        	}
-		}   		 	
-	}
+	                log.trace "bridge.value.scenes[${sceneId}].lights = ${sceneLights}"
+				    log.trace "bridge.value.scenes[${sceneId}].lightStates = ${scenelightStates}"
+
+            	    if (bridge.value.scenes[sceneId].lights) {
+					    it.updateStatus("scene", "lights", bridge.value.scenes[sceneId].lights)
+                    }
+                    if (scenelightStates) {
+					    it.updateStatus("scene", "lightStates", scenelightStates)
+				//	it.updateStatus("scene", "schedule", "off")
+                    }
+        	    }
+		    }
+	    }
+    }
 }
 
 def locationHandler(evt) {
