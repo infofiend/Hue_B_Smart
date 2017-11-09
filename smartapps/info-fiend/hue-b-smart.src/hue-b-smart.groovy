@@ -14,7 +14,8 @@
  *
  *	Version 1 TMLeafs Fork
  *	Version 1.1 Thanks to Detmer for changes and testing
- *
+ *	Version 1.2 Fixed Update problem due to bulb,scene or group deleted from hue without removing it from smartthings first. Thanks to Collisionc
+ *	Version 1.2 Added FlashCoRe for webcore usage
  */
 definition(
         name: "Hue B Smart",
