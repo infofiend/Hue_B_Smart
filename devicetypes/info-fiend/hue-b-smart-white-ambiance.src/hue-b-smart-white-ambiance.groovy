@@ -41,6 +41,7 @@ metadata {
         command "reset"
         command "refresh"
         command "flash"
+	command "flashCoRe"
         command "flash_off"
         command "setColorTemperature"        
         command "updateStatus"
