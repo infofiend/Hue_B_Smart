@@ -389,13 +389,13 @@ def flash() {
     runIn(5, flash_off)
 }
 
-def flashCoRe() {
-	log.trace "Hue B Smart Lux Group: flashCoRe(): "
+def flashCoRE() {
+	log.debug "Hue B Smart Ambience Bulb: flash()"
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
-			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+			path: "/api/${commandData.username}/lights/${commandData.deviceId}/state",
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
@@ -440,61 +440,6 @@ def scaleLevel(level, fromST = false, max = 254) {
 //    log.trace "scaleLevel returned ${scaled}."
     
 }
-
-/**
- * Update Status
- **/
-/**
-def updateStatus(action, param, val) {
-	//log.trace "Hue B Smart Ambience Bulb: updateStatus: ${param}:${val}"
-	if (action == "state") {
-		switch(param) {
-        	case "on":
-            	def onoff
-            	if (val == true) {
-                	sendEvent(name: "switch", value: on, isStateChange: true)                	     
-                
-                } else {
-	            	sendEvent(name: "switch", value: off)
-                	sendEvent(name: "effect", value: "none", isStateChange: true)    
-                }    
-                break
-
-			case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val)) //parent.scaleLevel(val, true, 255))
-                break
-			case "hue":
-            	sendEvent(name: "hue", value: parent.scaleLevel(val)) //parent.scaleLevel(val, false, 65535))
-			    sendEvent(name: "colormode", value: "HS", isStateChange: true)                 
-                break
-            case "sat":
-            	sendEvent(name: "sat", value: parent.scaleLevel(val)) //parent.scaleLevel(val))
-			    sendEvent(name: "colormode", value: "HS", isStateChange: true)                 
-                break
-			case "ct": 
-            	sendEvent(name: "colorTemperature", value: Math.round(1000000/val))  //Math.round(1000000/val))
-                sendEvent(name: "colormode", value: "CT", isStateChange: true) 
-                break
-			case "reachable":
-				sendEvent(name: "reachable", value: val, isStateChange: true)
-				break
-            case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, isStateChange: true)
-                break
-			case "alert":
-            	if (val == "none") {
-            		flash_off() 	//sendEvent(name: "alert", value: val, isStateChange: true)
-                } else if (val == "lselect") {
-                	flash_on()
-                }
-                break
-    
-			default: 
-				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
-        }
-    }
-}
-**/
 
 /**
  * Update Status
