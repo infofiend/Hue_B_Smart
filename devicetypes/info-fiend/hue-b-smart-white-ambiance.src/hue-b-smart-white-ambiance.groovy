@@ -389,8 +389,8 @@ def flash() {
     runIn(5, flash_off)
 }
 
-def flashCoRE() {
-	log.debug "Hue B Smart Ambience Bulb: flash()"
+def flashCoRe() {
+	log.trace "Hue B Smart Lux Group: flashCoRe(): "
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
@@ -407,7 +407,7 @@ def flashCoRE() {
 }
 
 def flash_off() {
-	log.debug "Hue B Smart Ambience Bulb: flash_ off()"
+	log.debug "Hue B Smart Ambience Bulb: flash_off()"
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
@@ -559,7 +559,14 @@ private updateStatus(action, param, val) {
                 } else {
 	     //           log.debug "NO Update Needed for transitionTime."                	
                 }    
-                break                
+                break
+            case "alert":
+            	if (val == "none") {
+            		log.debug "Not Flashing"            		
+                } else {
+                	log.debug "Flashing"
+                }
+                break
             case "effect":
             	curValue = device.currentValue("effect")
                 if (curValue != val) { 
