@@ -251,12 +251,12 @@ def flash() {
 }
 
 def flashCoRe() {
-	log.trace "Hue B Smart Lux Group: flashCoRe(): "
+	log.trace "Hue B Smart Lux Bulb: flashCoRe(): "
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
-			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+			path: "/api/${commandData.username}/lights/${commandData.deviceId}/state",
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
@@ -303,41 +303,6 @@ def scaleLevel(level, fromST = false, max = 254) {
     
 }
                 
-/**
- * Update Status
- **/
-/**private updateStatus(action, param, val) {
-	//log.trace "Hue B Smart Lux Bulb: updateStatus ( ${param}:${val} )"
-	if (action == "state") {
-		switch(param) {
-        	case "on":
-            	def onoff
-            	if (val == true) {
-                	sendEvent(name: "switch", value: on, displayed:false, isStateChange: true)                	     
-                
-                } else {
-	            	sendEvent(name: "switch", value: off, displayed:false)
-                	sendEvent(name: "alert", value: "none", displayed:false, isStateChange: true)    
-                }    
-                break
-            case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val), displayed:false, isStateChange: true) 
-                break
-            case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, displayed:false, isStateChange: true)
-                break                
-            
-                
-			case "reachable":
-				sendEvent(name: "reachable", value: val, displayed:false, isStateChange: true)
-				break
-			default: 
-				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
-        }
-    }
-}
-**/
-
 /**
  * Update Status
  **/
