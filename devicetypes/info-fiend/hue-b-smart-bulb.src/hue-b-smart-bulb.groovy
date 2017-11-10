@@ -546,12 +546,12 @@ def flash() {
 }
 
 def flashCoRe() {
-	log.trace "Hue B Smart Lux Group: flashCoRe(): "
+	log.trace "Hue B Smart Bulb: flashCoRe(): "
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
-			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
+			path: "/api/${commandData.username}/lights/${commandData.deviceId}/state",
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
@@ -697,7 +697,14 @@ private updateStatus(action, param, val) {
                 } else {
 	     //           log.debug "NO Update Needed for transitionTime."                	
                 }    
-                break                
+                break
+            case "alert":
+            	if (val == "none") {
+            		log.debug "Not Flashing"            		
+                } else {
+                	log.debug "Flashing"
+                }
+                break
             case "effect":
             	curValue = device.currentValue("effect")
                 if (curValue != val) { 
