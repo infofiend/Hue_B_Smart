@@ -676,7 +676,14 @@ private updateStatus(action, param, val) {
                 } else {
 	//                log.debug "NO Update Needed for transitionTime."                	
                 }    
-                break                
+                break
+            case "alert":
+            	if (val == "none") {
+            		log.debug "Not Flashing"            		
+                } else {
+                	log.debug "Flashing"
+                }
+                break
             case "effect":
             	curValue = device.currentValue("effect")
                 if (curValue != val) { 
