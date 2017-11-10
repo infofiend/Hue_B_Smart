@@ -304,52 +304,8 @@ def scaleLevel(level, fromST = false, max = 254) {
 /**
  * Update Status
  **/
-/**
 private updateStatus(action, param, val) {
-	log.trace "Hue B Smart Lux Group: updateStatus ( ${param}:${val} )"
-	if (action == "action") {
-		switch(param) {
-        	case "on":
-            	def onoff
-            	if (val == true) {
-                	sendEvent(name: "switch", value: on, displayed:false, isStateChange: true)                	     
-                
-                } else {
-	            	sendEvent(name: "switch", value: off, displayed:false)
-                	sendEvent(name: "alert", value: "none", displayed:false, isStateChange: true)    
-                }    
-                break
-            case "bri":
-            	sendEvent(name: "level", value: parent.scaleLevel(val)) //parent.scaleLevel(val, true, 255))
-                break
-            case "transitiontime":
-            	sendEvent(name: "transitionTime", value: val, displayed:false, isStateChange: true)
-                break                
-            case "alert":
-            	if (val == "none") {
-            		flash_off() 
-                } else {
-                	flash()
-                }
-                break
-			case "lights":
-            	sendEvent(name: "lights", value: val, displayed:false, isStateChange: true)
-                break
-            case "scene":
-            	log.trace "received scene ${val}"
-                break    
-			default: 
-				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
-        }
-    }
-}
-**/
-
-/**
- * Update Status
- **/
-private updateStatus(action, param, val) {
-	//log.trace "Hue B Lux Group: updateStatus ( ${param}:${val} )"
+	log.trace "Hue B Lux Group: updateStatus ( ${param}:${val} )"
 	if (action == "action") {
     	def onoffNotice = state.notisetting1
     	def otherNotice = state.notisetting2        
@@ -404,7 +360,7 @@ private updateStatus(action, param, val) {
                 	log.debug "Flashing"
                 }
                 break
-			case "lights":
+	    case "lights":
             	curValue = device.currentValue("lights")
                 if (curValue != val) { 
                		log.debug "Update Needed: Current Value of lights = ${curValue} & newValue = ${val}" 
