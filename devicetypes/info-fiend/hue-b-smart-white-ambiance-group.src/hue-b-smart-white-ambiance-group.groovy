@@ -24,7 +24,7 @@ preferences {
 }  
  
 metadata {
-	definition (name: "Hue B Smart White Ambience Group", namespace: "info_fiend", author: "Anthony Pastor") {
+	definition (name: "Hue B Smart White Ambiance Group", namespace: "info_fiend", author: "Anthony Pastor") {
         capability "Switch Level"
         capability "Actuator"
         capability "Color Temperature"
