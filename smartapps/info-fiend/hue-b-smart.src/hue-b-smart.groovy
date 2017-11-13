@@ -642,7 +642,7 @@ def chooseGroups(params) {
 		}
        else if (g.action.ct) {
 			try { 
-				def d = addChildDevice("info_fiend", "Hue B Smart White Ambience Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Ambience Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
+				def d = addChildDevice("info_fiend", "Hue B Smart White Ambiance Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Ambience Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
 	    	    log.debug "adding group ${d}."	//  Are lights assigned? lights = ${g.lights}"     
             	["bri", "sat", "on", "ct", "colormode", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
