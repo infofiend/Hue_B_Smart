@@ -16,6 +16,7 @@
  *	Version 1.1 Thanks to Detmer for changes and testing
  *	Version 1.2 Fixed Update problem due to bulb,scene or group deleted from hue without removing it from smartthings first. Thanks to Collisionc
  *	Version 1.2 Added FlashCoRe for webcore usage
+ *      Version 1.3 Added White Ambience Group
  */
 definition(
         name: "Hue B Smart",
@@ -41,6 +42,7 @@ preferences {
     	page(name:"enableQF", content: "enableQF")
 	//page(name:"deleteQuickfixSch", content: "deleteQuickfixSch")
     	page(name:"deleteBridge", content: "deleteBridge")
+        page(name:"unlinkBridge", content: "unlinkBridge")
         page(name:"defaultTransition", title:"Default Transition", content:"defaultTransition", refreshTimeout:5)
 }
 
@@ -280,6 +282,8 @@ def bridges() {
 		    log.debug("Bridges Linked IP ${ip}")
                 def mac = "${it.value.mac}"
 		    log.debug("Bridges Linked MAC ${mac}")
+            def bridgeinfo = getBridge(mac)
+            log.debug("Bridges Linked KEY ${bridgeinfo.key}")
                 state.mac = mac
                 def title = "Hue Bridge ${ip}"
                 href(name:"manageBridge ${mac}", page:"manageBridge", title: title, description: "", params: [mac: mac])
@@ -295,9 +299,17 @@ def bridges() {
                 def title = "Hue Bridge ${ip}"
                 href(name:"linkBridge ${mac}", page:"linkButton", title: title, description: "", params: [mac: mac, ip: ip, ssdpUSN: it.value.ssdpUSN])
             }
+                                href(name: "Unlink Bridge", page:"unlinkBridge", title:"", description:"unlink bridge INCORRECT MAC", params: [mac: "00178849A170"])
+
         }
     }
 }
+
+def unlinkBridge(params) {
+def bridge = getBridge(params.mac)
+getLinkedBridges().remove(bridge.key)
+}
+
 
 def deleteBridge(params) {
 
@@ -396,8 +408,8 @@ def chooseBulbs(params) {
 				["bri", "reachable", "on"].each { p -> 
 					d.updateStatus("state", p, b.state[p])
 				}
-                d.updateStatus("state", "transitiontime", 4)
-                d.updateStatus("state", "colormode", "HS")                
+                d.updateStatus("state", "transitiontime", 2)
+                //d.updateStatus("state", "colormode", "HS")                
                 d.configure()
                 addedBulbs[bulbId] = b
                 availableBulbs.remove(bulbId)
@@ -411,8 +423,8 @@ def chooseBulbs(params) {
 				["ct", "bri", "reachable", "on"].each { p ->
                         		d.updateStatus("state", p, b.state[p])
                 		}
-                d.updateStatus("state", "transitiontime", 4)
-		d.configure()
+                d.updateStatus("state", "transitiontime", 2)
+				d.configure()
                 addedBulbs[bulbId] = b
                 availableBulbs.remove(bulbId)
            		} catch (grails.validation.ValidationException e) {
@@ -427,7 +439,7 @@ def chooseBulbs(params) {
                     
 				}
                 d.updateStatus("state", "colormode", "HS")
-                d.updateStatus("state", "transitiontime", 4)
+                d.updateStatus("state", "transitiontime", 2)
                 d.configure()
                 addedBulbs[bulbId] = b
                 availableBulbs.remove(bulbId)
@@ -618,7 +630,7 @@ def chooseGroups(params) {
             	["bri", "sat", "hue", "on", "xy", "ct", "colormode", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
 				}
-    	        d.updateStatus("action", "transitiontime", 4)
+    	        d.updateStatus("action", "transitiontime", 2)
 //        	    d.updateStatus("action", "lights", "${g.lights}")
 			//	d.updateStatus("scene", "lightDevId", "{g.groupLightDevIds}")
 	            d.configure()
@@ -627,14 +639,32 @@ def chooseGroups(params) {
 			} catch (grails.validation.ValidationException e) {
     	        	log.debug "${devId} already created"
 	    	}
-		} else {
+		}
+       else if (g.action.ct) {
+			try { 
+				def d = addChildDevice("info_fiend", "Hue B Smart White Ambience Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Ambience Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
+	    	    log.debug "adding group ${d}."	//  Are lights assigned? lights = ${g.lights}"     
+            	["bri", "sat", "on", "ct", "colormode", "effect"].each { p ->
+                		d.updateStatus("action", p, g.action[p])                    
+				}
+    	        d.updateStatus("action", "transitiontime", 2)
+//        	    d.updateStatus("action", "lights", "${g.lights}")
+			//	d.updateStatus("scene", "lightDevId", "{g.groupLightDevIds}")
+	            d.configure()
+				addedGroups[groupId] = g
+				availableGroups.remove(groupId)
+			} catch (grails.validation.ValidationException e) {
+    	        	log.debug "${devId} already created"
+	    	}
+		}
+        else {
 			try { 
 				def d = addChildDevice("info_fiend", "Hue B Smart Lux Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Lux Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
 	    	    log.debug "638A adding group ${d}."  // Are lights assigned? lights = ${g.lights}"     
             	["bri", "on", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
 				}
-    	        d.updateStatus("action", "transitiontime", 4)
+    	        d.updateStatus("action", "transitiontime", 2)
   //      	    d.updateStatus("action", "lights", "${g.lights}")
 	//			d.updateStatus("scene", "lightDevId", "{g.groupLightDevIds}")
 	            d.configure()
@@ -1212,7 +1242,7 @@ def itemDiscoveryHandler(evt) {
     		if (it.deviceNetworkId.contains("BULB")) {
 	            log.trace "contains BULB / DNI = ${it.deviceNetworkId}: ${it}"
    	            def bulbId = it.deviceNetworkId.split("/")[1] - "BULB"
-       	        log.debug "bulbId = ${bulbId}"
+       	        log.debug "bulbId = ${bulbId}" 
                 def bBulb = bridge.value.bulbs[bulbId]
                 log.debug "bridge.value.bulbs[bulbId] = ${bBulb}."
                 if ( bBulb != null ) {  // If user removes bulb from hue without removing it from smartthings,
@@ -1313,6 +1343,39 @@ def locationHandler(evt) {
         }
     }
 }
+
+def Hubinstall(evt){
+    def parsedEvent = parseLanMessage(description)
+										
+    if (parsedEvent?.ssdpTerm?.contains("urn:schemas-upnp-org:device:basic:1")) {
+        /* SSDP response */
+		log.debug "SSDP Response"	
+        processDiscoveryResponse(parsedEvent)
+    } else if (parsedEvent.headers && parsedEvent.body) {
+        /* Hue bridge HTTP reply */
+        def headerString = parsedEvent.headers.toString()
+        if (headerString.contains("xml")) {
+			log.debug "HeaderString: XML"	
+            /* description.xml reply, verifying bridge */
+            processVerifyResponse(parsedEvent.body)
+        } else if (headerString?.contains("json")) {
+			log.debug "HeaderString: JSON"	
+            def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
+            if (body.success != null && body.success[0] != null && body.success[0].username) {
+                log.debug "Got Username From Bridge"	
+				/* got username from bridge */
+                state.params.linkDone = true
+                state.params.username = body.success[0].username
+            } else if (body.error && body.error[0] && body.error[0].description) {
+                log.debug "error: ${body.error[0].description}"
+            } else {
+                log.debug "unknown response: ${headerString}"
+                log.debug "unknown response: ${body}"
+            }
+        }
+    }
+}
+
 
 /**
  * HUE BRIDGE COMMANDS
@@ -1415,6 +1478,37 @@ def getCommandData(id) {
                   deviceId: "${ids[0] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"}", ]
     }
    
+    return result
+}
+
+
+def getCommandHub(id) {
+    def ids = id.split("/")
+    def devId
+    def ipAddr
+    def userName
+ 
+    log.debug("In getCommandData()")
+    log.debug("id = ${id}")
+    
+    if( id.contains("/") ) {
+       devId = ids[1] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"
+    }
+    else {
+       devId = ids
+    }
+    
+    if( state.host ) {
+       def url = state.host.split(":")
+       ipAddr = url[0] + ":80"
+       userName = state.user
+    }
+    def result = [ip: "${ipAddr}",
+                  username: "${userName}",
+                  deviceId: "${devId}",  ]
+    
+    log.debug("Out getCommandData = ${result}")
+    
     return result
 }
 
