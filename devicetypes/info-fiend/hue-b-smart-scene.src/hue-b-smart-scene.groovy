@@ -280,7 +280,7 @@ def updateSceneFromDevice() {
 
 def updateStatus(type, param, val) {
 
-	log.debug "updating status: ${type}:${param}:${val}"
+	//log.debug "updating status: ${type}:${param}:${val}"
 	if (type == "scene") {
 		if (param == "lights") {
 
