@@ -499,6 +499,8 @@ private updateStatus(action, param, val) {
                 break
             case "sat": 
             	break
+	    case "hue": 
+            	break
             case "reachable":
             	if (device.currentValue("reachable") != val) {
 					sendEvent(name: "reachable", value: val, displayed: otherNotice, isStateChange: true)
