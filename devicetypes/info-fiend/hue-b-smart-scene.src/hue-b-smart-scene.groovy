@@ -149,7 +149,7 @@ def setToGroup ( Integer inGroupID = 0) {
 	        body: [scene: "${commandData.deviceId}"]
 		])
 	)
-
+parent.doDeviceSync()
 }
 
 def setTo2Groups ( group1, group2 ) {
@@ -189,7 +189,7 @@ def setTo2Groups ( group1, group2 ) {
 	        body: [scene: "${commandData.deviceId}"]
 		])
 	)
-
+parent.doDeviceSync()
 
 }
 
