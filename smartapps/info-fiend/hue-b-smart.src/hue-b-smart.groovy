@@ -282,8 +282,6 @@ def bridges() {
 		    log.debug("Bridges Linked IP ${ip}")
                 def mac = "${it.value.mac}"
 		    log.debug("Bridges Linked MAC ${mac}")
-            def bridgeinfo = getBridge(mac)
-            log.debug("Bridges Linked KEY ${bridgeinfo.key}")
                 state.mac = mac
                 def title = "Hue Bridge ${ip}"
                 href(name:"manageBridge ${mac}", page:"manageBridge", title: title, description: "", params: [mac: mac])
@@ -299,17 +297,9 @@ def bridges() {
                 def title = "Hue Bridge ${ip}"
                 href(name:"linkBridge ${mac}", page:"linkButton", title: title, description: "", params: [mac: mac, ip: ip, ssdpUSN: it.value.ssdpUSN])
             }
-                                href(name: "Unlink Bridge", page:"unlinkBridge", title:"", description:"unlink bridge INCORRECT MAC", params: [mac: "00178849A170"])
-
         }
     }
 }
-
-def unlinkBridge(params) {
-def bridge = getBridge(params.mac)
-getLinkedBridges().remove(bridge.key)
-}
-
 
 def deleteBridge(params) {
 
