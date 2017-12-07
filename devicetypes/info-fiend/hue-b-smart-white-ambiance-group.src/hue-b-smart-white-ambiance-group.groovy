@@ -14,7 +14,7 @@
  *
  *	Version 1 TMLeafs Fork
  *	1.2 Added command flashCoRe for webcore
- * 	1.3 Added White Ambience Group
+ * 	1.4 Added White Ambience Group
  *
  */
 preferences {
