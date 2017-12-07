@@ -14,12 +14,12 @@
  *
  *	Version 1 TMLeafs Fork
  *	1.2 Added command flashCoRe for webcore
+ *	1.3 Fixed IDE Logging Information + Other Bug Fixes
  *
  */
 preferences {
-	input("tt", "integer", defaultValue: 4, title: "Time it takes for the lights to transition (default: 4 = 400ms)")
-    	input("notiSetting", "enum", title: "Notifications", description: "Level of Notifications for this Device?",
-	    options: ["All", "Only On / Off", "None"] )
+	input("tt", "integer", defaultValue: 4, title: "Time it takes for the lights to transition (default: 2 = 200ms)")
+	input("notiSetting", "enum", required:true ,title: "Notifications", description: "Level of IDE Notifications for this Device?", options: ["All", "Only On / Off", "None"], defaultValue: "All")
 }  
  
 metadata {
@@ -30,27 +30,27 @@ metadata {
 	capability "Polling"
 	capability "Refresh"
 	capability "Sensor"
-        capability "Configuration"
+	capability "Configuration"
                 
-        command "reset"
-        command "refresh"
-        command "updateStatus"
-        command "flash"
+	command "reset"
+	command "refresh"
+	command "updateStatus"
+	command "flash"
 	command "flashCoRe"
-        command "flash_off"
-        command "sendToHub"
-        command "setLevel"
-        command "scaleLevel"
-                       
-        attribute "lights", "STRING"       
+	command "flash_off"
+	command "sendToHub"
+	command "setLevel"
+	command "scaleLevel"
+	               
+	attribute "lights", "STRING"       
 	attribute "transitionTime", "NUMBER"
 	attribute "bri", "number"
-        attribute "level", "number"
+	attribute "level", "number"
 	attribute "on", "string"
-        attribute "groupID", "string"
-        attribute "host", "string"
-        attribute "username", "string"
-        
+	attribute "groupID", "string"
+	attribute "host", "string"
+	attribute "username", "string"
+	attribute "idelogging", "string"
 	}
 
 	simulator {
@@ -114,39 +114,36 @@ def installed() {
 }
 
 def updated(){
-	log.debug "Updated Preferences"
+	log.debug "Updated with settings: ${settings}"
 	sendEvent(name: "transitionTime", value: tt)
-    initialize()
+	idelogs()
+}
+
+def idelogs() {
+	if (notiSetting == null || notiSetting == "Only On / Off"){
+	sendEvent(name: "idelogging", value: "OnOff")
+	}else if(notiSetting == "All"){
+	state.IDELogging = All
+	sendEvent(name: "idelogging", value: "All")
+	}else {
+	sendEvent(name: "idelogging", value: "None")
+	}
 }
 
 def initialize() {
 	state.xy = [:]
-
-    state.notiSetting1 = true
-    state.notiSetting2 = true
-    log.trace "Initialize(): notiSetting is ${notiSetting}"
-	if (notiSetting == "All" ) {
-    
-    } else if (notiSetting == "Only On / Off" ) {
-   		state.notiSetting2 = false
-
-	} else if (notiSetting == "None" ) {
-		state.notiSetting1 = false
-	    state.notiSetting2 = false
-    }    
-    log.debug "state.notiSetting1 = ${state.notiSetting1}"
-    log.debug "state.notiSetting2 = ${state.notiSetting2}"    
+	if (notiSetting == null){sendEvent(name: "idelogging", value: "OnOff")}   
 }
 
 /** 
  * capability.switchLevel 
  **/
 def setLevel(inLevel) {
-	log.trace "Hue B Smart Lux Group: setLevel ( ${inLevel} ): "
+	if(device.currentValue("idelogging") == "All"){log.trace "Hue B Smart Lux Group: setLevel ( ${inLevel} ): "}
 	def level = scaleLevel(inLevel, true, 254)
 
-    def commandData = parent.getCommandData(device.deviceNetworkId)
-    def tt = this.device.currentValue("transitionTime") ?: 0
+	def commandData = parent.getCommandData(device.deviceNetworkId)
+	def tt = this.device.currentValue("transitionTime") ?: 0
     
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
@@ -165,12 +162,18 @@ def setLevel(inLevel) {
  * capability.switch
  **/
 def on() {
-	log.trace "Hue B Smart Lux Group: on(): "
+	if(device.currentValue("idelogging") == "All" || device.currentValue("idelogging") == "OnOff"){
+	log.trace "Hue B Smart Lux Group: on(): "}
 
-    def commandData = parent.getCommandData(device.deviceNetworkId)
+	if(device.currentValue("idelogging") == null){
+	idelogs()
+	log.trace "IDE Logging Updated" //update old users IDE Logs
+	}
+
+	def commandData = parent.getCommandData(device.deviceNetworkId)
 	def tt = device.currentValue("transitionTime") as Integer ?: 0
-    def percent = device.currentValue("level") as Integer ?: 100
-    def level = scaleLevel(percent, true, 254)
+	def percent = device.currentValue("level") as Integer ?: 100
+	def level = scaleLevel(percent, true, 254)
     
         return new physicalgraph.device.HubAction(
     	[
@@ -184,30 +187,28 @@ def on() {
 }
 
 def off() {
-	log.trace "Hue B Smart Lux Group: off(): "
+	if(device.currentValue("idelogging") == "All" || device.currentValue("idelogging") == "OnOff"){
+	log.trace "Hue B Smart Lux Group: off(): "}
     
-    def commandData = parent.getCommandData(device.deviceNetworkId)
-    def tt = device.currentValue("transitionTime") as Integer ?: 0
+	def commandData = parent.getCommandData(device.deviceNetworkId)
+	def tt = device.currentValue("transitionTime") as Integer ?: 0
     
-    //parent.sendHubCommand(
-    return new physicalgraph.device.HubAction(
+	return new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
 			path: "/api/${commandData.username}/groups/${commandData.deviceId}/action",
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        //body: [on: false, transitiontime: tt]
 			body: [on: false]
 		])
-//	)
 }
 
 /** 
  * capability.polling
  **/
 def poll() {
-	log.trace "Hue B Smart Lux Group: poll(): "
+	if(device.currentValue("idelogging") == 'All'){log.trace "Hue B Smart Lux Group: poll(): "}
 	refresh()
 }
 
@@ -215,16 +216,15 @@ def poll() {
  * capability.refresh
  **/
 def refresh() {
-	log.trace "Hue B Smart Lux Group: refresh(): "
+	if(device.currentValue("idelogging") == 'All'){log.trace "Hue B Smart Lux Group: refresh(): "}
 	parent.doDeviceSync()
-    configure()
+	//configure()
 }
 
 def reset() {
-	log.trace "Hue B Smart Lux Group: reset(): "
-
+	if(device.currentValue("idelogging") == 'All'){log.trace "Hue B Smart Lux Group: reset(): "}
 	def value = [level:70, saturation:56, hue:23]
-    sendToHub(value)
+	sendToHub(value)
 }
 
 /**
@@ -232,8 +232,8 @@ def reset() {
  **/
 
 def flash() {
-	log.trace "Hue B Smart Lux Group: flash(): "
-    def commandData = parent.getCommandData(device.deviceNetworkId)
+	if(device.currentValue("idelogging") == 'All'){log.trace "Hue B Smart Lux Group: flash(): "}
+	def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
@@ -249,8 +249,8 @@ def flash() {
 }
 
 def flashCoRe() {
-	log.trace "Hue B Smart Lux Group: flashCoRe(): "
-    def commandData = parent.getCommandData(device.deviceNetworkId)
+	if(device.currentValue("idelogging") == 'All'){log.trace "Hue B Smart Lux Group: flashCoRe(): "}
+	def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
@@ -266,9 +266,8 @@ def flashCoRe() {
 }
 
 def flash_off() {
-	log.trace "Hue B Smart Lux Group: flash_off(): "
-    
-    def commandData = parent.getCommandData(device.deviceNetworkId)
+	if(device.currentValue("idelogging") == 'All'){log.trace "Hue B Smart Lux Group: flash_off(): "}
+    	def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
@@ -285,9 +284,6 @@ def flash_off() {
  * scaleLevel
  **/
 def scaleLevel(level, fromST = false, max = 254) {
-//	log.trace "scaleLevel( ${level}, ${fromST}, ${max} )"
-    /* scale level from 0-254 to 0-100 */
-    
     if (fromST) {
         return Math.round( level * max / 100 )
     } else {
@@ -296,81 +292,83 @@ def scaleLevel(level, fromST = false, max = 254) {
 		} else { 	
         	return Math.round( level * 100 / max )
 		}
-    }    
-//    log.trace "scaleLevel returned ${scaled}."
-    
+    }       
 }
                 
 /**
  * Update Status
  **/
 private updateStatus(action, param, val) {
-	log.trace "Hue B Lux Group: updateStatus ( ${param}:${val} )"
+	//log.trace "Hue B Lux Group: updateStatus ( ${param}:${val} )"
 	if (action == "action") {
-    	def onoffNotice = state.notisetting1
-    	def otherNotice = state.notisetting2        
-        def curValue
-		switch(param) {
-        	case "on":
+	def idelogging = device.currentValue("idelogging")     
+	def curValue
+	switch(param) {
+	case "on":
             	curValue = device.currentValue("switch")
                 def onoff
             	if (val == true) {
-       	         	if (curValue != on) { 
-                		log.debug "Update Needed: Current Value of switch = false & newValue = ${val}"
-                		sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
-					} else {
-		              //log.debug "NO Update Needed for switch."                	
+       	         	if (curValue != on) {
+				if(idelogging == "All" || idelogging == "OnOff"){ 
+                		log.debug "Update Needed: Current Value of switch = false & newValue = ${val}"}
+                		sendEvent(name: "switch", value: on, displayed: true, isStateChange: true)                	     
+				} else {
+		        	//log.debug "NO Update Needed for switch."                	
         	        }
 
                 } else {
-       	         	if (curValue != off) { 
-                		log.debug "Update Needed: Current Value of switch = true & newValue = ${val}"               	                	                
-		            	sendEvent(name: "switch", value: off, displayed: onoffNotice)
-    	            	sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)    
-					} else {
-		               //log.debug "NO Update Needed for switch."                	
+       	         	if (curValue != off) {
+				if(idelogging == "All" || idelogging == "OnOff"){ 
+                		log.debug "Update Needed: Current Value of switch = true & newValue = ${val}"}               	                	                
+		            	sendEvent(name: "switch", value: off, displayed: true)
+    	            		sendEvent(name: "effect", value: "none", displayed: false, isStateChange: true)    
+				} else {
+				//log.debug "NO Update Needed for switch."                	
 	                }
 
                 }    
                 break
-            case "bri":
-	            curValue = device.currentValue("level")
+	case "bri":
+		curValue = device.currentValue("level")
                 val = scaleLevel(val)
-                if (curValue != val) { 
-               		log.debug "Update Needed: Current Value of level = ${curValue} & newValue = ${val}" 
-	            	sendEvent(name: "level", value: val, displayed: otherNotice, isStateChange: true) 
-				} else {
+                if (curValue != val) {
+                	if(idelogging == 'All'){
+               		log.debug "Update Needed: Current Value of level = ${curValue} & newValue = ${val}"} 
+	            	sendEvent(name: "level", value: val, displayed: true, isStateChange: true) 
+			} else {
 	                //log.debug "NO Update Needed for level."                	
-                }
-                
+                }            
                 break
-            case "transitiontime":
-	            curValue = device.currentValue("transitionTime")
-                if (curValue != val) { 
-               		log.debug "Update Needed: Current Value of transitionTime = ${curValue} & newValue = ${val}"                	
-	            	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
-                } else {
+	case "transitiontime":
+		curValue = device.currentValue("transitionTime")
+                if (curValue != val) {
+                	if(idelogging == 'All'){
+               		log.debug "Update Needed: Current Value of transitionTime = ${curValue} & newValue = ${val}"}                	
+	            	sendEvent(name: "transitionTime", value: val, displayed: true, isStateChange: true)
+                	} else {
 	                //log.debug "NO Update Needed for transitionTime."                	
                 }    
                 break
-            case "alert":
-            	if (val == "none") {
+	case "alert":
+            	if (val == "none" && idelogging == 'All') {
             		log.debug "Not Flashing"            		
-                } else {
+                	} else if (val != "none" && idelogging == 'All'){
                 	log.debug "Flashing"
                 }
                 break
-	    case "lights":
+	case "lights":
             	curValue = device.currentValue("lights")
-                if (curValue != val) { 
-               		log.debug "Update Needed: Current Value of lights = ${curValue} & newValue = ${val}" 
-	            	sendEvent(name: "lights", value: val, displayed: otherNotice, isStateChange: true) 
-				} else {
-	               //log.debug "NO Update Needed for lights"
+                if (curValue != val) {
+			if(idelogging == 'All'){ 
+               		log.debug "Update Needed: Current Value of lights = ${curValue} & newValue = ${val}"}
+	            	sendEvent(name: "lights", value: val, displayed: false, isStateChange: true) 
+			} else {
+			//log.debug "NO Update Needed for lights"
                 }
                 break
             case "scene":
-            	log.trace "received scene ${val}"
+		if(idelogging == 'All'){
+            	log.trace "received scene ${val}"}
                 break 
 			default: 
 				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
