@@ -16,67 +16,68 @@
  *	Version 1 TMLeafs Fork
  *	1.1 Fixed Transition Time Display Bug
  *	1.2 Added command flashCoRe for webcore
- *	
+ *	1.3 Fixed IDE Logging Information + Other Bug Fixes
+ *
  */
 preferences {
-	input("tt", "integer", defaultValue: 4, title: "Time it takes for the lights to transition (default: 4 = 400ms)")  
-	input("notiSetting", "enum", title: "Notifications", description: "Level of Notifications for this Device?",
-	    options: ["All", "Only On / Off", "None"] )
-	 }  
+	input("tt", "integer", defaultValue: 2, title: "Time it takes for the lights to transition (default: 2 = 200ms)")   
+	input("notiSetting", "enum", required:true ,title: "Notifications", description: "Level of IDE Notifications for this Device?", options: ["All", "Only On / Off", "None"], defaultValue: "All")
+}  
  
 metadata {
 	definition (name: "Hue B Smart Group", namespace: "info_fiend", author: "Anthony Pastor") {
 	capability "Switch Level"
 	capability "Actuator"
 	capability "Color Control"
-        capability "Color Temperature"
+	capability "Color Temperature"
 	capability "Switch"
 	capability "Polling"
 	capability "Refresh"
 	capability "Sensor"
-        capability "Configuration"
+	capability "Configuration"
         
-        command "setAdjustedColor"
-        command "reset"
-        command "refresh"
-        command "updateStatus"
-        command "flash"
+	command "setAdjustedColor"
+	command "reset"
+	command "refresh"
+	command "updateStatus"
+	command "flash"
 	command "flashCoRe"	
-        command "flash_off"
-        command "setColorTemperature"
-        command "colorloopOn"
-        command "colorloopOff"
-        command "getHextoXY"
-        command "colorFromHSB"
-        command "colorFromHex"
-        command "colorFromXY"
-        command "getHSfromRGB"
-        command "pivotRGB"
-        command "revPivotRGB"
-        command "setHue"
-        command "setHueUsing100"               
-        command "setSaturation"
-        command "sendToHub"
-        command "setLevel"
-        command "setColor"
+	command "flash_off"
+	command "setColorTemperature"
+	command "colorloopOn"
+	command "colorloopOff"
+	command "getHextoXY"
+	command "colorFromHSB"
+	command "colorFromHex"
+	command "colorFromXY"
+	command "getHSfromRGB"
+	command "pivotRGB"
+	command "revPivotRGB"
+	command "setHue"
+	command "setHueUsing100"               
+	command "setSaturation"
+	command "sendToHub"
+	command "setLevel"
+	command "setColor"
 	command "applyRelax"
-        command "applyConcentrate"
-        command "applyReading"
-        command "applyEnergize"
+	command "applyConcentrate"
+	command "applyReading"
+	command "applyEnergize"
 	command "scaleLevel"
 	        
-        attribute "lights", "STRING"       
+	attribute "lights", "STRING"       
 	attribute "transitionTime", "NUMBER"
-        attribute "colorTemperature", "number"
+	attribute "colorTemperature", "number"
 	attribute "bri", "number"
 	attribute "saturation", "number"
 	attribute "hue", "number"
 	attribute "on", "string"
 	attribute "colormode", "enum", ["XY", "CT", "HS", "LOOP"]
 	attribute "effect", "enum", ["none", "colorloop"]
-        attribute "groupID", "string"
-        attribute "host", "string"
-        attribute "username", "string"
+	attribute "groupID", "string"
+	attribute "host", "string"
+	attribute "username", "string"
+	attribute "idelogging", "string"
         
 	}
 
@@ -185,37 +186,32 @@ def installed() {
 def updated() {
 	log.debug "Updated with settings: ${settings}"
 	sendEvent(name: "transitionTime", value: tt)
-	initialize()
+	idelogs()
+}
+
+def idelogs() {
+	if (notiSetting == null || notiSetting == "Only On / Off"){
+    	sendEvent(name: "idelogging", value: "OnOff")
+    	}else if(notiSetting == "All"){
+    	state.IDELogging = All
+    	sendEvent(name: "idelogging", value: "All")
+    	}else {
+    	sendEvent(name: "idelogging", value: "None")
+    	}
 }
 
 def initialize() {
 	state.xy = [:]
-    
-    state.notiSetting1 = true
-    state.notiSetting2 = true
-    log.trace "Initialize(): notiSetting is ${notiSetting}"
-	if (notiSetting == "All" ) {
-    
-    } else if (notiSetting == "Only On / Off" ) {
-   		state.notiSetting2 = false
-
-	} else if (notiSetting == "None" ) {
-		state.notiSetting1 = false
-	    state.notiSetting2 = false
-    }    
-    log.debug "state.notiSetting1 = ${state.notiSetting1}"
-    log.debug "state.notiSetting2 = ${state.notiSetting2}"    
+    if (notiSetting == null){sendEvent(name: "idelogging", value: "OnOff")}   
 }
-
-
 
 /** 
  * capability.switchLevel 
  **/
 def setLevel(inLevel) {
-	log.trace "Hue B Smart Group: setLevel ( ${inLevel} ): "
+	if(device.currentValue("idelogging") == "All"){
+	log.trace "Hue B Smart Group: setLevel ( ${inLevel} ): "}
 	def level = scaleLevel(inLevel, true, 254)
-	log.debug "Setting level to ${level}."
 
     def commandData = parent.getCommandData(device.deviceNetworkId)
     def tt = this.device.currentValue("transitionTime") ?: 0
@@ -246,11 +242,12 @@ def setLevel(inLevel) {
  * capability.colorControl 
  **/
 def sendToHub(values) {
-	log.trace "Hue B Smart Group: sendToHub ( ${values} ): "
+	if(device.currentValue("idelogging") == "All"){
+	log.trace "Hue B Smart Group: sendToHub ( ${values} ): "}
     
 	def validValues = [:]
 	def commandData = parent.getCommandData(device.deviceNetworkId)
-    def sendBody = [:]
+    	def sendBody = [:]
 
 	def bri
 	if (values.level) {
@@ -293,7 +290,7 @@ def sendToHub(values) {
 		
     	if (validValues.xy ) {
     
-			log.debug "XY value found.  Sending ${sendBody} " 
+			//log.debug "XY value found.  Sending ${sendBody} " 
 
 			parent.sendHubCommand(new physicalgraph.device.HubAction(
     			[
@@ -306,19 +303,18 @@ def sendToHub(values) {
 				])
 			)
         
-			sendEvent(name: "colormode", value: "XY", displayed: state.notiSetting2, isStateChange: true) 
-        	sendEvent(name: "hue", value: values.hue as Integer, displayed: state.notiSetting2) 
-	        sendEvent(name: "saturation", value: values.saturation as Integer, displayed: state.notiSetting2, isStateChange: true) 
-
-        	sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
+		sendEvent(name: "colormode", value: "XY", displayed: true, isStateChange: true) 
+		sendEvent(name: "hue", value: values.hue as Integer, displayed: true) 
+		sendEvent(name: "saturation", value: values.saturation as Integer, displayed: true, isStateChange: true) 
+		sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
             
 		} else {
     		def h = values.hue.toInteger()
         	def s = values.saturation.toInteger()
-	    	log.trace "sendToHub: no XY values, so get from Hue & Saturation."
-			validValues.xy = colorFromHSB(h, s, bri) 	//values.hue, values.saturation)		// getHextoXY(values.hex)
+	    	//log.trace "sendToHub: no XY values, so get from Hue & Saturation."
+		validValues.xy = colorFromHSB(h, s, bri) 	//values.hue, values.saturation)		// getHextoXY(values.hex)
         	sendBody["xy"] = validValues.xy
-			log.debug "Sending ${sendBody} "
+		//log.debug "Sending ${sendBody} "
 
 			parent.sendHubCommand(new physicalgraph.device.HubAction(
     			[
@@ -330,55 +326,55 @@ def sendToHub(values) {
 			        body: sendBody 
 				])
 			)    
-			sendEvent(name: "colormode", value: "HS", displayed: state.notiSetting2) //, isStateChange: true) 
-    	    sendEvent(name: "hue", value: values.hue, displayed: state.notiSetting2) //, isStateChange: true) 
-        	sendEvent(name: "saturation", value: values.saturation, displayed: state.notiSetting2, isStateChange: true) 
-        
-	        sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
+		sendEvent(name: "colormode", value: "HS", displayed: true) //, isStateChange: true) 
+		sendEvent(name: "hue", value: values.hue, displayed: true) //, isStateChange: true) 
+		sendEvent(name: "saturation", value: values.saturation, displayed: true, isStateChange: true) 
+		sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
     	   
     	}
 	} else {
     	if (values.hue && values.saturation) {
             validValues.xy = colorFromHSB(values.hue, values.saturation, bri)
-          	log.debug "Group off, so saving xy value ${validValues.xy} for later."   
+            //log.debug "Group off, so saving xy value ${validValues.xy} for later."   
             state.xy = validValues.xy
             state.ct = null
             
-            sendEvent(name: "colormode", value: "HS", displayed: state.notiSetting2) //, isStateChange: true) 
-            sendEvent(name: "hue", value: values.hue, displayed: state.notiSetting2) //, isStateChange: true) 
-        	sendEvent(name: "saturation", value: values.saturation, displayed: state.notiSetting2, isStateChange: true) 
-            sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
+		sendEvent(name: "colormode", value: "HS", displayed: true) //, isStateChange: true) 
+		sendEvent(name: "hue", value: values.hue, displayed: true) //, isStateChange: true) 
+		sendEvent(name: "saturation", value: values.saturation, displayed: true, isStateChange: true) 
+		sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
         }    
     }    
 }
 
-def setColor(inValues) {   
-    log.debug "Hue B Smart Group: setColor( ${inValues} )."
-   
-	sendToHub(inValues)
+def setColor(inValues) {
+	if(device.currentValue("idelogging") == "All"){   
+	log.debug "Hue B Smart Group: setColor( ${inValues} )."}
+   	sendToHub(inValues)
 }	
 
-
-
 def setHue(inHue) {
-	log.debug "Hue B Smart Group: setHue( ${inHue} )."
-    def sat = this.device.currentValue("saturation") ?: 100
-    if (sat == -1) { sat = 100 }
+	if(device.currentValue("idelogging") == "All"){
+	log.debug "Hue B Smart Group: setHue( ${inHue} )."}
+	def sat = this.device.currentValue("saturation") ?: 100
+	if (sat == -1) { sat = 100 }
 	sendToHub([saturation:sat, hue:inHue])
 }
 
 def setSaturation(inSat) {
-	log.debug "Hue B Smart Group: setSaturation( ${inSat} )."    
+	if(device.currentValue("idelogging") == "All"){
+	log.debug "Hue B Smart Group: setSaturation( ${inSat} )."}    
 	def hue = this.device.currentValue("hue") ?: 70
-    if (hue == -1) { hue = 70 }
+	if (hue == -1) { hue = 70 }
 	sendToHub([saturation:inSat, hue:hue])
 }
 
 def setHueUsing100(inHue) {
-	log.debug "Hue B Smart Bulb: setHueUsing100( ${inHue} )."
+	if(device.currentValue("idelogging") == "All"){
+	log.debug "Hue B Smart Bulb: setHueUsing100( ${inHue} )."}
     
 	if (inHue > 100) { inHue = 100 }
-    if (inHue < 0) { inHue = 0 }
+	if (inHue < 0) { inHue = 0 }
 	def sat = this.device.currentValue("saturation") ?: 100
 
 	sendToHub([saturation:sat, hue:inHue])
@@ -388,7 +384,8 @@ def setHueUsing100(inHue) {
  * capability.colorTemperature 
  **/
 def setColorTemperature(inCT) {
-	log.trace "Hue B Smart Group: setColorTemperature ( ${inCT} ): "
+	if(device.currentValue("idelogging") == "All"){
+	log.trace "Hue B Smart Group: setColorTemperature ( ${inCT} ): "}
     
     def colorTemp = inCT ?: this.device.currentValue("colorTemperature")
     colorTemp = Math.round(1000000/colorTemp)
@@ -449,8 +446,14 @@ def applyEnergize() {
  * capability.switch
  **/
 def on() {
-	log.trace "Hue B Smart Group: on(): "
-
+	if(device.currentValue("idelogging") == "All" || device.currentValue("idelogging") == "OnOff"){
+	log.trace "Hue B Smart Group: on(): "}
+	
+	if(device.currentValue("idelogging") == null){
+	idelogs()
+	log.trace "IDE Logging Updated" //update old users IDE Logs
+	}
+		
     def commandData = parent.getCommandData(device.deviceNetworkId)
 	def tt = device.currentValue("transitionTime") as Integer ?: 0
     def percent = device.currentValue("level") as Integer ?: 100
@@ -475,18 +478,15 @@ def on() {
 			],
 	        body: sendBody
 		])
-     
-    //    sendEvent(name: "switch", value: on, isStateChange: true, displayed: true)
-
 }
 
 def off() {
-	log.trace "Hue B Smart Group: off(): "
+	if(device.currentValue("idelogging") == "All" || device.currentValue("idelogging") == "OnOff"){
+	log.trace "Hue B Smart Group: off(): "}
     
     def commandData = parent.getCommandData(device.deviceNetworkId)
     def tt = device.currentValue("transitionTime") as Integer ?: 0
-    
-    //parent.sendHubCommand(
+
     return new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
@@ -494,19 +494,16 @@ def off() {
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        //body: [on: false, transitiontime: tt]
             body: [on: false]
 		])
-//	)
-     //   sendEvent(name: "switch", value: off, isStateChange: true, displayed: true)
-
 }
 
 /** 
  * capability.polling
  **/
 def poll() {
-	log.trace "Hue B Smart Group: poll(): "
+	if(device.currentValue("idelogging") == 'All'){
+	log.trace "Hue B Smart Group: poll(): "}
 	refresh()
 }
 
@@ -514,16 +511,18 @@ def poll() {
  * capability.refresh
  **/
 def refresh() {
-	log.trace "Hue B Smart Group: refresh(): "
+	if(device.currentValue("idelogging") == 'All'){
+	log.trace "Hue B Smart Group: refresh(): "}
 	parent.doDeviceSync()
-    configure()
+	//configure()
 }
 
 def reset() {
-	log.trace "Hue B Smart Group: reset(): "
+	if(device.currentValue("idelogging") == 'All'){
+	log.trace "Hue B Smart Group: reset(): "}
 
-    def value = [level:70, saturation:56, hue:23]
-    sendToHub(value)
+	def value = [level:70, saturation:56, hue:23]
+	sendToHub(value)
 }
 
 /**
@@ -531,8 +530,9 @@ def reset() {
  **/
 
 def flash() {
-	log.trace "Hue B Smart Group: flash(): "
-    def commandData = parent.getCommandData(device.deviceNetworkId)
+	if(device.currentValue("idelogging") == 'All'){
+	log.trace "Hue B Smart Group: flash(): "}
+	def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
@@ -548,8 +548,9 @@ def flash() {
 }
 
 def flashCoRe() {
-	log.trace "Hue B Smart Lux Group: flashCoRe(): "
-    def commandData = parent.getCommandData(device.deviceNetworkId)
+	if(device.currentValue("idelogging") == 'All'){
+	log.trace "Hue B Smart Lux Group: flashCoRe(): "}
+	def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
@@ -565,9 +566,10 @@ def flashCoRe() {
 }
 
 def flash_off() {
-	log.trace "Hue B Smart Group: flash_off(): "
+	if(device.currentValue("idelogging") == 'All'){
+	log.trace "Hue B Smart Group: flash_off(): "}
     
-    def commandData = parent.getCommandData(device.deviceNetworkId)
+	def commandData = parent.getCommandData(device.deviceNetworkId)
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
         	method: "PUT",
@@ -587,52 +589,55 @@ def flash_off() {
 private updateStatus(action, param, val) {
 	//log.trace "Hue B Smart Group: updateStatus ( ${param}:${val} )"
 	if (action == "action") {
-		def onoffNotice = state.notisetting1
-    	def otherNotice = state.notisetting2        
-        def curValue
+		def idelogging = device.currentValue("idelogging")
+		def curValue
 		switch(param) {
         	case "on":
             	curValue = device.currentValue("switch")
                 def onoff
             	if (val == true) {
-       	         	if (curValue != on) { 
-                		log.debug "Update Needed: Current Value of switch = false & newValue = ${val}"
-                		sendEvent(name: "switch", value: on, displayed: onoffNotice, isStateChange: true)                	     
-					} else {
-		//                log.debug "NO Update Needed for switch."                	
+       	         	if (curValue != on) {
+                    	if(idelogging == "All" || idelogging == "OnOff"){
+                		log.debug "Update Needed: Current Value of switch = false & newValue = ${val}"}
+                		sendEvent(name: "switch", value: on, displayed: true, isStateChange: true)                	     
+				} else {
+				//log.debug "NO Update Needed for switch."                	
         	        }
 
                 } else {
-       	         	if (curValue != off) { 
-                		log.debug "Update Needed: Current Value of switch = true & newValue = ${val}"               	                	                
-		            	sendEvent(name: "switch", value: off, displayed: onoffNotice)
-    	            	sendEvent(name: "effect", value: "none", displayed: otherNotice, isStateChange: true)    
-					} else {
-		//                log.debug "NO Update Needed for switch."                	
+       	         	if (curValue != off) {
+                    	if(idelogging == "All" || idelogging == "OnOff"){
+                		log.debug "Update Needed: Current Value of switch = true & newValue = ${val}"}               	                	                
+		            	sendEvent(name: "switch", value: off, displayed: true)
+    	            		sendEvent(name: "effect", value: "none", displayed: false, isStateChange: true)    
+				} else {
+		  		//log.debug "NO Update Needed for switch."                	
 	                }
 
                 }    
                 break
             case "bri":
-	            curValue = device.currentValue("level")
+	    	curValue = device.currentValue("level")
                 val = scaleLevel(val)
-                if (curValue != val) { 
-               		log.debug "Update Needed: Current Value of level = ${curValue} & newValue = ${val}" 
-	            	sendEvent(name: "level", value: val, displayed: otherNotice, isStateChange: true) 
-				} else {
-	//                log.debug "NO Update Needed for level."                	
+                if (curValue != val) {
+		if(idelogging == 'All'){ 
+               		log.debug "Update Needed: Current Value of level = ${curValue} & newValue = ${val}" }
+	            	sendEvent(name: "level", value: val, displayed: true, isStateChange: true) 
+			} else {
+			//log.debug "NO Update Needed for level."                	
                 }
                 
                 break
-			case "hue":
+	    case "hue":
             	curValue = device.currentValue("hue")
                 val = scaleLevel(val, false, 65535)
                 if (val > 100) { val = 100 }                
-                if (curValue != val) { 
-               		log.debug "Update Needed: Current Value of hue = ${curValue} & newValue = ${val}" 
-	            	sendEvent(name: "hue", value: val, displayed: otherNotice, isStateChange: true) 
-				} else {
-	//                log.debug "NO Update Needed for hue."                	
+                if (curValue != val) {
+		if(idelogging == 'All'){ 
+               		log.debug "Update Needed: Current Value of hue = ${curValue} & newValue = ${val}" }
+	            	sendEvent(name: "hue", value: val, displayed: true, isStateChange: true) 
+			} else {
+		//log.debug "NO Update Needed for hue."                	
                 }            	
                 break
             case "sat":
@@ -640,20 +645,22 @@ private updateStatus(action, param, val) {
                 val = scaleLevel(val)
                 if (val > 100) { val = 100 }                
                 if (curValue != val) { 
-               		log.debug "Update Needed: Current Value of saturation = ${curValue} & newValue = ${val}" 
-	            	sendEvent(name: "saturation", value: val, displayed: otherNotice, isStateChange: true) 
-				} else {
-	//                log.debug "NO Update Needed for saturation."                	
+		if(idelogging == 'All'){
+               		log.debug "Update Needed: Current Value of saturation = ${curValue} & newValue = ${val}" }
+	            	sendEvent(name: "saturation", value: val, displayed: true, isStateChange: true) 
+			} else {
+		//log.debug "NO Update Needed for saturation."                	
                 }
                 break
 			case "ct": 
             	curValue = device.currentValue("colorTemperature")
                 val = Math.round(1000000/val)
-                if (curValue != val) { 
-               		log.debug "Update Needed: Current Value of colorTemperature = ${curValue} & newValue = ${val}" 
-	            	sendEvent(name: "colorTemperature", value: val, displayed: otherNotice, isStateChange: true) 
-				} else {
-	//                log.debug "NO Update Needed for colorTemperature."                	
+                if (curValue != val) {
+		if(idelogging == 'All'){ 
+               		log.debug "Update Needed: Current Value of colorTemperature = ${curValue} & newValue = ${val}" }
+	            	sendEvent(name: "colorTemperature", value: val, displayed: true, isStateChange: true) 
+			} else {
+			//log.debug "NO Update Needed for colorTemperature."                	
                 }
                 break
             case "xy": 
@@ -661,49 +668,53 @@ private updateStatus(action, param, val) {
                 break    
             case "colormode":
             	curValue = device.currentValue("colormode")
-                if (curValue != val) { 
-               		log.debug "Update Needed: Current Value of colormode = ${curValue} & newValue = ${val}" 
-	            	sendEvent(name: "colormode", value: val, displayed: otherNotice, isStateChange: true) 
-				} else {
-	//                log.debug "NO Update Needed for colormode."                	
+                if (curValue != val) {
+			if(idelogging == 'All'){ 
+               		log.debug "Update Needed: Current Value of colormode = ${curValue} & newValue = ${val}" }
+	            	sendEvent(name: "colormode", value: val, displayed: false, isStateChange: true) 
+			} else {
+			//log.debug "NO Update Needed for colormode."                	
                 }	
                 break
             case "transitiontime":
 	            curValue = device.currentValue("transitionTime")
                 if (curValue != val) { 
-               		log.debug "Update Needed: Current Value of transitionTime = ${curValue} & newValue = ${val}"                	
-	            	sendEvent(name: "transitionTime", value: val, displayed: otherNotice, isStateChange: true)
-                } else {
-	//                log.debug "NO Update Needed for transitionTime."                	
+			if(idelogging == 'All'){
+               		log.debug "Update Needed: Current Value of transitionTime = ${curValue} & newValue = ${val}"}                	
+	            	sendEvent(name: "transitionTime", value: val, displayed: true, isStateChange: true)
+                	} else {
+			//log.debug "NO Update Needed for transitionTime."                	
                 }    
                 break
             case "alert":
-            	if (val == "none") {
+            	if (val == "none" && display == 'all') {
             		log.debug "Not Flashing"            		
-                } else {
+                } else if(val != "none" && display == 'all')  {
                 	log.debug "Flashing"
                 }
                 break
             case "effect":
             	curValue = device.currentValue("effect")
-                if (curValue != val) { 
+                if (curValue != val && display == 'all') { 
                		log.debug "Update Needed: Current Value of effect = ${curValue} & newValue = ${val}" 
-	            	sendEvent(name: "effect", value: val, displayed: otherNotice, isStateChange: true) 
-				} else {
-	//                log.debug "NO Update Needed for effect "                	
+	            	sendEvent(name: "effect", value: val, displayed: false, isStateChange: true) 
+			} else {
+			//log.debug "NO Update Needed for effect "                	
                 }
                 break
-			case "lights":
+	    case "lights":
             	curValue = device.currentValue("lights")
-                if (curValue != val) { 
+                if (curValue != val && display == 'all') { 
                		log.debug "Update Needed: Current Value of lights = ${curValue} & newValue = ${val}" 
-	            	sendEvent(name: "lights", value: val, displayed: otherNotice, isStateChange: true) 
-				} else {
-	  //              log.debug "NO Update Needed for lights"
+	            	sendEvent(name: "lights", value: val, displayed: false, isStateChange: true) 
+			} else {
+			//log.debug "NO Update Needed for lights"
                 }
                 break
             case "scene":
+            	if (display == 'all'){
             	log.trace "received scene ${val}"
+                }
                 break    
 			default: 
 				log.debug("Unhandled parameter: ${param}. Value: ${val}")    
@@ -1121,8 +1132,4 @@ private getHextoXY(String colorStr) {
     return xy;
 }
 
-
-/**
- * Misc
- **/
 def getDeviceType() { return "groups" }
