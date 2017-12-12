@@ -297,7 +297,7 @@ def sendToHub(values) {
 		
     	if (validValues.xy ) {
     
-			//log.debug "XY value found.  Sending ${sendBody} " 
+			if(device.currentValue("idelogging") == "All"){log.debug "XY value found.  Sending ${sendBody} "}
 
 			parent.sendHubCommand(new physicalgraph.device.HubAction(
     			[
@@ -310,19 +310,18 @@ def sendToHub(values) {
 				])
 			)
         
-		sendEvent(name: "colormode", value: "XY", displayed: true, isStateChange: true) 
+			sendEvent(name: "colormode", value: "xy", displayed: true, isStateChange: true) 
         	sendEvent(name: "hue", value: values.hue as Integer, displayed: true) 
 	        sendEvent(name: "saturation", value: values.saturation as Integer, displayed: true, isStateChange: true) 
-
         	sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
             
 		} else {
     		def h = values.hue.toInteger()
         	def s = values.saturation.toInteger()
-	    	//log.trace "sendToHub: no XY values, so get from Hue & Saturation."
-		validValues.xy = colorFromHSB(h, s, bri) 	//values.hue, values.saturation)		// getHextoXY(values.hex)
-        	sendBody["xy"] = validValues.xy
-		//log.debug "Sending ${sendBody} "
+			if(device.currentValue("idelogging") == "All"){log.trace "sendToHub: no XY values, so get from Hue & Saturation."}
+			validValues.xy = colorFromHSB(h, s, bri) 	//values.hue, values.saturation)		// getHextoXY(values.hex)
+			sendBody["xy"] = validValues.xy
+			if(device.currentValue("idelogging") == "All"){log.debug "Sending ${sendBody} "}
 
 			parent.sendHubCommand(new physicalgraph.device.HubAction(
     			[
@@ -334,16 +333,17 @@ def sendToHub(values) {
 			        body: sendBody 
 				])
 			)    
-		sendEvent(name: "colormode", value: "HS", displayed: true) //, isStateChange: true) 
+		
+			sendEvent(name: "colormode", value: "HS", displayed: true) //, isStateChange: true) 
     	   	sendEvent(name: "hue", value: values.hue, displayed: true) //, isStateChange: true) 
         	sendEvent(name: "saturation", value: values.saturation, displayed: true, isStateChange: true) 
-                sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
+			sendEvent(name: "colorTemperature", value: -1, displayed: false, isStateChange: true)
     	   
     	}
 	} else {
     	if (values.hue && values.saturation) {
             validValues.xy = colorFromHSB(values.hue, values.saturation, bri)
-            //log.debug "Light off, so saving xy value ${validValues.xy} for later."   
+            if(device.currentValue("idelogging") == "All"){log.debug "Light off, so saving xy value ${validValues.xy} for later."}
             state.xy = validValues.xy
             state.ct = null
             
@@ -358,36 +358,32 @@ def sendToHub(values) {
 
 def setColor(inValues) {   
 	if(device.currentValue("idelogging") == "All"){
-    	log.debug "Hue B Smart Bulb: setColor( ${inValues} )."}
-   
+	log.debug "Hue B Smart Bulb: setColor( ${inValues} )."}   
 	sendToHub(inValues)
-}
-
+}	
 
 def setHue(inHue) {
 	if(device.currentValue("idelogging") == "All"){
 	log.debug "Hue B Smart Bulb: setHue( ${inHue} )."}
-    	def level = Math.min(Math.round(inHue * 65535 / 100), 65535)
-	sendToHub([hue:level])
+    def sat = this.device.currentValue("saturation") ?: 100
+    if (sat == -1) { sat = 100 }
+	sendToHub([saturation:sat, hue:inHue])
 }
 
 def setSaturation(inSat) {
 	if(device.currentValue("idelogging") == "All"){
 	log.debug "Hue B Smart Bulb: setSaturation( ${inSat} )."}
-	def level = Math.min(Math.round(inSat * 254 / 100), 254)
-    	//def hue = this.device.currentValue("hue") ?: 70
-	//if (hue == -1) { hue = 70 }        
-	sendToHub([saturation:level])
+	def hue = this.device.currentValue("hue") ?: 70
+	if (hue == -1) { hue = 70 }        
+	sendToHub([saturation:inSat, hue:hue])
 }
 
 def setHueUsing100(inHue) {
 	if(device.currentValue("idelogging") == "All"){
-    	log.debug "Hue B Smart Bulb: setHueUsing100( ${inHue} )."}
-    
+	log.debug "Hue B Smart Bulb: setHueUsing100( ${inHue} )."}
 	if (inHue > 100) { inHue = 100 }
-    	if (inHue < 0) { inHue = 0 }
+    if (inHue < 0) { inHue = 0 }
 	def sat = this.device.currentValue("saturation") ?: 100
-
 	sendToHub([saturation:sat, hue:inHue])
 }
 
