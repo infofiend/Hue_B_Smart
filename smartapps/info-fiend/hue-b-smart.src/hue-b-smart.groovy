@@ -17,6 +17,7 @@
  *	Version 1.2 Fixed Update problem due to bulb,scene or group deleted from hue without removing it from smartthings first. Thanks to Collisionc
  *	Version 1.2 Added FlashCoRe for webcore usage
  *      Version 1.3 Added White Ambience Group
+ *	Version 1.4 Added Version Number into log to make sure people are running the latest version when they moan it doesnt work
  */
 definition(
         name: "Hue B Smart",
@@ -269,7 +270,7 @@ def bridges() {
     // Send bridge discovery request every 15 seconds
     if ((state.bridgeRefreshCount % 5) == 1) {
         discoverHueBridges()
-        log.debug "Bridge discovery sent"
+        log.debug "Bridge discovery sent - TMLEAFS 1.4"
     } else {
         // if we're not sending bridge discovery, verify bridges instead
         verifyHueBridges()
