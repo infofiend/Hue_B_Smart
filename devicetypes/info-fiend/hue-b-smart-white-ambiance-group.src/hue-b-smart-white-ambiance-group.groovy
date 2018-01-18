@@ -15,6 +15,7 @@
  *	Version 1 TMLeafs Fork
  *	1.2 Added command flashCoRe for webcore
  * 	1.4 Added White Ambience Group
+ *	1.5 Added Light Capability for smartapps
  *
  */
 preferences {
@@ -32,7 +33,8 @@ metadata {
 	capability "Refresh"
 	capability "Sensor"
 	capability "Configuration"
-                
+	capability "Light"
+	
 	command "reset"
 	command "refresh"
 	command "updateStatus"
