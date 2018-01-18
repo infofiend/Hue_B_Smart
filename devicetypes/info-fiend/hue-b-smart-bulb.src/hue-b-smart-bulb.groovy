@@ -16,6 +16,7 @@
  *	1.1 Fixed Transition Time Display Bug
  *	1.2 Added command flashCoRe for webcore
  *	1.4 Fixed IDE Logging Information + Other Bug Fixes
+ *	1.5 Added Light capability for smartapps
  */
 preferences {
 	input("tt", "integer", defaultValue: 2, title: "Time it takes for the lights to transition (default: 2 = 200ms)")   
@@ -33,6 +34,7 @@ metadata {
 	capability "Refresh"
 	capability "Sensor"
 	capability "Configuration"
+    	capability "Light"
         
 	command "setAdjustedColor"
 	command "reset"
