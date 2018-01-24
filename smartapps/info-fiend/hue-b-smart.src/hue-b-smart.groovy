@@ -19,6 +19,7 @@
  *      Version 1.3 Added White Ambience Group
  *	Version 1.4 Added Version Number into log to make sure people are running the latest version when they moan it doesnt work
  *	Version 1.5 Fixed install problem for some users
+ *	Version 1.6 Added app settings menu, Updated logs with more than just debug messages, Added option to hide all app logs 
  */
 definition(
         name: "Hue B Smart",
@@ -39,6 +40,7 @@ preferences {
 	page(name:"chooseBulbs", content: "chooseBulbs")
  	page(name:"chooseScenes", content: "chooseScenes")
  	page(name:"chooseGroups", content: "chooseGroups")
+	page(name:"settings", content: "settings")
     	page(name:"deleteBridge", content: "deleteBridge")
         page(name:"unlinkBridge", content: "unlinkBridge")
 }
@@ -54,18 +56,18 @@ def manageBridge(params) {
     }
 
     def bridge = getBridge(params.mac)
-	log.debug("Manage Bridge ${bridge}")
+	logMessage("Manage Bridge ${bridge}", "trace")
     def ip = convertHexToIP(bridge.value.networkAddress)
-	log.debug("Manage Bridge ${ip}")
+	logMessage("Manage Bridge IP Address ${ip}", "info")
     def mac = params.mac
-	log.debug("Manage Bridge Params ${mac}")
+	logMessage("Manage Bridge MAC Address ${mac}", "info")
     def bridgeDevice = getChildDevice(mac)
-	log.debug("Manage Bridge GET ${bridgeDevice}")
+	logMessage("Manage Bridge DeviceName is ${bridgeDevice}", "info")
     def title = "${bridgeDevice} ${ip}"
     def refreshInterval = 2
 
     if (!bridgeDevice) {
-        log.debug("Bridge device not found?")
+        logMessage("Bridge device not found?", "warn")
         /* Error, bridge device doesn't exist? */
         return
     }
@@ -124,7 +126,7 @@ def manageBridge(params) {
 
 def linkBridge() {
     state.params.done = true
-    log.debug "linkBridge"
+    logMessage("linkBridge")
     dynamicPage(name:"linkBridge") {
         section() {
             getLinkedBridges() << state.params.mac
@@ -151,10 +153,10 @@ def linkButton(params) {
     params.linkingBridge = true
     if (!params.linkDone) {
         if ((linkRefreshcount % 2) == 0) {
-        	log.debug "Sending Developer Request"
+        	logMessage("Sending Developer Request", "info")
             	sendDeveloperReq(params.mac)
         }
-        log.debug "linkButton ${params}"
+        logMessage("linkButton ${params}")
         dynamicPage(name: "linkButton", refreshInterval: refreshInterval, nextPage: "linkButton") {
             section("Hue Bridge ${params.ip}") {
                 paragraph "Please press the link button on your Hue bridge."
@@ -166,18 +168,18 @@ def linkButton(params) {
         }
     } else {
         /* link success! create bridge device */
-        log.debug "Bridge linked!"
-        log.debug("ssdp ${params.ssdpUSN}")
-        log.debug("username ${params.username}")
+        logMessage("Bridge linked!", "info")
+        logMessage("ssdp ${params.ssdpUSN}", "trace")
+        logMessage("username ${params.username}", "trace")
         
         def bridge = getUnlinkedBridges().find{it?.key?.contains(params.ssdpUSN)}
-        log.debug("line 171B bridge ${bridge}")
+        logMessage("Bridge ${bridge}", "info")
 
 	state.user = params.username
         state.host = params.ip + ":80"
-        log.debug "state.user = ${state.user} ******************"
-	log.debug "state.host = ${state.host} ******************"
-        log.debug "bridge.value.serialNumber = ${bridge.value.serialNumber} *****************"
+        logMessage("state.user = ${state.user} ******************", "trace")
+	logMessage("state.host = ${state.host} ******************", "trace")
+        logMessage("bridge.value.serialNumber = ${bridge.value.serialNumber} *****************", "trace")
 
         def d = addChildDevice("info_fiend", "Hue B Smart Bridge", bridge.value.mac, bridge.value.hub, [label: "Hue B Smart Bridge (${params.ip}", username: "${params.username}", networkAddress: "${params.ip}", host: "${state.host}"])
 		
@@ -192,9 +194,9 @@ def linkButton(params) {
 
         bridge.value << ["bulbs" : [:], "groups" : [:], "scenes" : [:], "schedules" : [:]]
         getLinkedBridges() << bridge
-        log.debug "Bridge added to linked list"
+        logMessage("Bridge added to linked list", "info")
         getUnlinkedBridges().remove(params.ssdpUSN)
-        log.debug "Removed bridge from unlinked list"
+        logMessage("Removed bridge from unlinked list", "info")
 
         dynamicPage(name: "linkButton", nextPage: "Bridges") {
             section("Hue Bridge ${params.ip}") {
@@ -265,7 +267,7 @@ def bridges() {
     // Send bridge discovery request every 15 seconds
     if ((state.bridgeRefreshCount % 5) == 1) {
         discoverHueBridges()
-        log.debug "Bridge discovery sent - TMLEAFS 1.5"
+        logMessage("Bridge Discovery Sent - Version is 1.5", "warn")
     } else {
         // if we're not sending bridge discovery, verify bridges instead
         verifyHueBridges()
@@ -275,9 +277,9 @@ def bridges() {
         section("Linked Bridges") {
             getLinkedBridges().sort { it.value.name }.each {
                 def ip = convertHexToIP(it.value.networkAddress)
-		    log.debug("Bridges Linked IP ${ip}")
+		    logMessage("Bridges Linked IP Address ${ip}")
                 def mac = "${it.value.mac}"
-		    log.debug("Bridges Linked MAC ${mac}")
+		    logMessage("Bridges Linked MAC Address ${mac}")
                 state.mac = mac
                 def title = "Hue Bridge ${ip}"
                 href(name:"manageBridge ${mac}", page:"manageBridge", title: title, description: "", params: [mac: mac])
@@ -287,14 +289,27 @@ def bridges() {
             paragraph "Searching for Hue bridges. They will appear here when found. Please wait."
             getVerifiedBridges().sort { it.value.name }.each {
                 def ip = convertHexToIP(it.value.networkAddress)
-		    log.debug("Bridges UnLinked IP ${ip}")
+		    logMessage("Bridges UnLinked IP Address ${ip}")
                 def mac = "${it.value.mac}"
-		    log.debug("Bridges UnLinked MAC ${mac}")
+		    logMessage("Bridges UnLinked MAC Address ${mac}")
                 def title = "Hue Bridge ${ip}"
                 href(name:"linkBridge ${mac}", page:"linkButton", title: title, description: "", params: [mac: mac, ip: ip, ssdpUSN: it.value.ssdpUSN])
             }
         }
+        section("SmartApp Settings") {
+            href(name:"Settings", page:"settings", title: "Settings", description: "")
+            }
     }
+}
+
+def settings() {
+        return dynamicPage(name:"settings", title: "Settings", nexdtPage: "Bridges") {
+            section() {
+                paragraph "Debugging Toggle - Please Note - If you want support this will need to be turned On"
+		        input(name: "debug", type: "enum", title: "Debug Off Or On", defaultValue: "On", options: ["On","Off"])
+            	href(name:"Back", page:"Bridges", title:"", description: "Back to main page")
+            }
+        } 
 }
 
 def deleteBridge(params) {
@@ -307,7 +322,7 @@ def deleteBridge(params) {
 	
 	def bridge = getBridge(params.mac)
     def d = getChildDevice(params.mac)
-    log.debug "Deleting bridge ${d.currentValue('networkAddress')} (${params.mac})"
+    logMessage("Deleting bridge ${d.currentValue('networkAddress')} (${params.mac})", "warn")
     
 	def success = true
 	def devices = getChildDevices()
@@ -315,13 +330,13 @@ def deleteBridge(params) {
 	devices.each {
     	def devId = it.deviceNetworkId
         if (devId.contains(params.mac) && devId != params.mac) {
-        	log.debug "Removing ${devId}"
+        	logMessage("Removing ${devId}", "warn")
 			try {
     	    	deleteChildDevice(devId)
 			} catch (physicalgraph.exception.NotFoundException e) {
-	        	log.debug("${devId} already deleted?")
+	        	logMessage("${devId} already deleted?", "warn")
 			} catch (physicalgraph.exception.ConflictException e) {
-	        	log.debug("${devId} still in use")
+	        	logMessage("${devId} still in use", "error")
 				text = text + "${it.label} is still in use. Remove from any SmartApps or Dashboards, then try again.\n"
 		        success = false
 			}
@@ -332,9 +347,9 @@ def deleteBridge(params) {
         	unsubscribe(d)
     		deleteChildDevice(params.mac)
 		} catch (physicalgraph.exception.NotFoundException e) {
-	    	log.debug("${params.mac} already deleted?")
+	    	logMessage("${params.mac} already deleted?", "waren")
 		} catch (physicalgraph.exception.ConflictException e) {
-	    	log.debug("${params.mac} still in use")
+	    	logMessage("${params.mac} still in use", "error")
 			text = text + "${params.mac} is still in use. Remove from any SmartApps or Dashboards, then try again.\n"
 			success = false
 		}
@@ -383,7 +398,7 @@ def chooseBulbs(params) {
     }
 
 	if (params.add) {
-	    log.debug("Adding ${params.add} 382")
+	    logMessage("Adding ${params.add}", "info")
         def bulbId = params.add
 		params.add = null
         def b = bridge.value.bulbs[bulbId]
@@ -400,7 +415,7 @@ def chooseBulbs(params) {
                 addedBulbs[bulbId] = b
                 availableBulbs.remove(bulbId)
 			} catch (grails.validation.ValidationException e) {
-            	log.debug "${devId} already created"
+            	logMessage("${devId} already created", "warn")
 			}    
 	    }
 		else if (b.type.equalsIgnoreCase("Color Temperature Light")) {
@@ -414,7 +429,7 @@ def chooseBulbs(params) {
                 addedBulbs[bulbId] = b
                 availableBulbs.remove(bulbId)
            		} catch (grails.validation.ValidationException e) {
-                log.debug "${devId} already created"
+                logMessage("${devId} already created", "warn")
             		}
 		}
 		else {
@@ -430,13 +445,13 @@ def chooseBulbs(params) {
                 addedBulbs[bulbId] = b
                 availableBulbs.remove(bulbId)
 			} catch (grails.validation.ValidationException e) {
-	            log.debug "${devId} already created"
+	            logMessage("${devId} already created", "warn")
 			}
 		}
 	}
     
     if (params.remove) {
-    	log.debug "Removing ${params.remove}"
+    	logMessage("Removing ${params.remove}", "info")
 		def devId = params.remove
         params.remove = null
 		def bulbId = devId.split("BULB")[1]
@@ -445,11 +460,11 @@ def chooseBulbs(params) {
             addedBulbs.remove(bulbId)
             availableBulbs[bulbId] = bridge.value.bulbs[bulbId]
 		} catch (physicalgraph.exception.NotFoundException e) {
-        	log.debug("${devId} already deleted")
+        	logMessage("${devId} already deleted", "warn")
             addedBulbs.remove(bulbId)
             availableBulbs[bulbId] = bridge.value.bulbs[bulbId]
 		} catch (physicalgraph.exception.ConflictException e) {
-        	log.debug("${devId} still in use")
+        	logMessage("${devId} still in use", "error")
             errorText = "Bulb ${bridge.value.bulbs[bulbId].label} is still in use. Remove from any SmartApps or Dashboards, then try again."
         }     
     }
@@ -502,12 +517,12 @@ def chooseScenes(params) {
 
     
 	if (params.add) {
-	    log.debug("Adding ${params.add}")
-        def sceneId = params.add
+		logMessage("Adding ${params.add}", "info")
+        	def sceneId = params.add
 		params.add = null
-        def s = bridge.value.scenes[sceneId]
-        log.debug "adding scene ${s.label}.  Are lights assigned? lights = ${s.lights}"
-		log.debug "Does scene ${s.label} have lightStates?  lightStates = ${s.lightStates}"
+        	def s = bridge.value.scenes[sceneId]
+        	logMessage("adding scene ${s.label}.  Are lights assigned? lights = ${s.lights}")
+		logMessage("Does scene ${s.label} have lightStates?  lightStates = ${s.lightStates}")
         
          
 		def devId = "${params.mac}/SCENE${sceneId}"
@@ -522,12 +537,12 @@ def chooseScenes(params) {
 			addedScenes[sceneId] = s
 			availableScenes.remove(sceneId)
 		} catch (grails.validation.ValidationException e) {
-            	log.debug "${devId} already created"
+            	logMessage("${devId} already created", "warn")
 	    }
 	}
     
     if (params.remove) {
-    	log.debug "Removing ${params.remove}"
+    	logMessage("Removing ${params.remove}", "info")
 		def devId = params.remove
         params.remove = null
 		def sceneId = devId.split("SCENE")[1]
@@ -537,11 +552,11 @@ def chooseScenes(params) {
             availableScenes[sceneId] = bridge.value.scenes[sceneId]
             
 		} catch (physicalgraph.exception.NotFoundException e) {
-        	log.debug("${devId} already deleted. 536")
+        	logMessage("${devId} already deleted", "warn")
 			addedScenes.remove(sceneId)
             availableScenes[sceneId] = bridge.value.scenes[sceneId]
 		} catch (physicalgraph.exception.ConflictException e) {
-        	log.debug("${devId} still in use. 540")
+        	logMessage("${devId} still in use", "error")
             errorText = "Scene ${bridge.value.scenes[sceneId].label} is still in use. Remove from any SmartApps or Dashboards, then try again."
         }
     }
@@ -587,7 +602,7 @@ def chooseGroups(params) {
 	def addedGroups = [:]
     def availableGroups = [:]
     def user = state.user
-    log.debug "=================== ${state.user} ================"
+    logMessage("=================== ${state.user} ================", "info")
     bridge.value.groups.each {
 		def devId = "${params.mac}/GROUP${it.key}"
 		def name = it.value.name
@@ -601,18 +616,18 @@ def chooseGroups(params) {
     }
 
 	if (params.add) {
-	    log.debug("602A Adding ${params.add}")
+	    logMessage("Adding ${params.add}", "info")
         def groupId = params.add
-        log.debug "ADDING GROUP: params.mac = ${params.mac} / groupId = ${groupId}"
+        logMessage("ADDING GROUP: params.mac = ${params.mac} / groupId = ${groupId}")
 		params.add = null
         def g = bridge.value.groups[groupId]
-        log.debug "ADDING GROUP: g / bridge.value.groups[groupId] = ${g}.  Are lights assigned? lights = ${g.lights} 605"
+        logMessage("ADDING GROUP: g / bridge.value.groups[groupId] = ${g}.  Are lights assigned? lights = ${g.lights}")
 		def devId = "${params.mac}/GROUP${groupId}"
         
         if (g.action.hue) {
 			try { 
 				def d = addChildDevice("info_fiend", "Hue B Smart Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Color Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
-	    	    log.debug "adding group ${d}."	//  Are lights assigned? lights = ${g.lights}"     
+	    	    logMessage("adding group ${d}")	//  Are lights assigned? lights = ${g.lights}"     
             	["bri", "sat", "hue", "on", "xy", "ct", "colormode", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
 				}
@@ -623,13 +638,13 @@ def chooseGroups(params) {
 				addedGroups[groupId] = g
 				availableGroups.remove(groupId)
 			} catch (grails.validation.ValidationException e) {
-    	        	log.debug "${devId} already created"
+    	        	logMessage("${devId} already created", "warn")
 	    	}
 		}
        else if (g.action.ct) {
 			try { 
 				def d = addChildDevice("info_fiend", "Hue B Smart White Ambiance Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Ambience Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
-	    	    log.debug "adding group ${d}."	//  Are lights assigned? lights = ${g.lights}"     
+	    	    logMessage("adding group ${d}")	//  Are lights assigned? lights = ${g.lights}"     
             	["bri", "sat", "on", "ct", "colormode", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
 				}
@@ -640,13 +655,13 @@ def chooseGroups(params) {
 				addedGroups[groupId] = g
 				availableGroups.remove(groupId)
 			} catch (grails.validation.ValidationException e) {
-    	        	log.debug "${devId} already created"
+    	        	logMessage("${devId} already created", "warn")
 	    	}
 		}
         else {
 			try { 
 				def d = addChildDevice("info_fiend", "Hue B Smart Lux Group", devId, bridge.value.hub, ["label": g.label, "type": g.type, "groupType": "Lux Group", "allOn": g.all_on, "anyOn": g.any_on, "lights": g.lights])
-	    	    log.debug "638A adding group ${d}."  // Are lights assigned? lights = ${g.lights}"     
+	    	    logMessage("adding group ${d}")  // Are lights assigned? lights = ${g.lights}"     
             	["bri", "on", "effect"].each { p ->
                 		d.updateStatus("action", p, g.action[p])                    
 				}
@@ -657,13 +672,13 @@ def chooseGroups(params) {
 				addedGroups[groupId] = g
 				availableGroups.remove(groupId)
 			} catch (grails.validation.ValidationException e) {
-    	        	log.debug "${devId} already created"
+    	        	logMessage("${devId} already created", "warn")
 	    	}
 		}        
     }
     
     if (params.remove) {
-    	log.debug "Removing ${params.remove}"
+    	logMessage("Removing ${params.remove}", "info")
 		def devId = params.remove
         params.remove = null
 		def groupId = devId.split("GROUP")[1]
@@ -672,11 +687,11 @@ def chooseGroups(params) {
             addedGroups.remove(groupId)
             availableGroups[groupId] = bridge.value.groups[groupId]
 		} catch (physicalgraph.exception.NotFoundException e) {
-        	log.debug("${devId} already deleted")
+        	logMessage("${devId} already deleted", "warn")
             addedGroups.remove(groupId)
             availableGroups[groupId] = bridge.value.groups[groupId]
 		} catch (physicalgraph.exception.ConflictException e) {
-        	log.debug("${devId} still in use")
+        	logMessage("${devId} still in use", "error")
             errorText = "Group ${bridge.value.groups[groupId].label} is still in use. Remove from any SmartApps or Dashboards, then try again."
         }
     }
@@ -704,22 +719,22 @@ def chooseGroups(params) {
 }
 
 def installed() {
-    log.debug "Installed with settings: ${settings}"
+    logMessage("Installed with settings: ${settings}", "info")
     initialize()
 }
 
 def uninstalled() {
-    log.debug "Uninstalling"
+    logMessage("Uninstalling", "info")
     state.installed = false
 }
 
 def updated() {
-    log.debug "Updated with settings: ${settings}"
+    logMessage("Updated with settings: ${settings}", "info")
     initialize()
 }
 
 def initialize() {
-    log.debug "Initialize"
+    logMessage("Initialize")
     unsubscribe()
     unschedule()
     state.schedules = []
@@ -742,7 +757,7 @@ def initialize() {
 
 def itemDiscoveryHandler(evt) {
 
-	log.trace "evt = ${evt}"
+	logMessage("evt = ${evt}", "trace")
     def bulbs = evt.jsonData[0]
  //   log.debug "bulbs from evt.jsonData[0] = ${bulbs}"
     def scenes = evt.jsonData[1]
@@ -765,7 +780,7 @@ def itemDiscoveryHandler(evt) {
     
 	bridge.value.bulbs = bulbs
     bridge.value.groups = groups
-    log.debug "Groups = ${groups}"
+    logMessage("Groups = ${groups}", "info")
    	bridge.value.scenes = scenes
     bridge.value.schedules = schedules
     
@@ -777,18 +792,18 @@ def itemDiscoveryHandler(evt) {
     
     /* update existing devices */
 	def devices = getChildDevices()
-    log.trace "devices = ${devices}"
+    logMessage("devices = ${devices}", "info")
 	devices.each {
-    	log.trace "device = ${it}"
+    	logMessage("device = ${it}", "info")
     	def devId = it.deviceNetworkId
         
 	    if (devId.contains(mac) && devId.contains("/")) {
     		if (it.deviceNetworkId.contains("BULB")) {
-	            log.trace "contains BULB / DNI = ${it.deviceNetworkId}: ${it}"
+	            logMessage("contains BULB / DNI = ${it.deviceNetworkId}: ${it}", "trace")
    	            def bulbId = it.deviceNetworkId.split("/")[1] - "BULB"
-       	        log.debug "bulbId = ${bulbId}" 
+       	        logMessage("bulbId = ${bulbId}", "trace")
                 def bBulb = bridge.value.bulbs[bulbId]
-                log.debug "bridge.value.bulbs[bulbId] = ${bBulb}."
+                logMessage("bridge.value.bulbs[bulbId] = ${bBulb}", "trace")
                 if ( bBulb != null ) {  // If user removes bulb from hue without removing it from smartthings,
                                         // getChildDevices() will still return the scene as part of the array as null, so we need to check for it to prevent crashing.
 				    def type = bBulb.type 	// bridge.value.bulbs[bulbId].type
@@ -829,19 +844,19 @@ def itemDiscoveryHandler(evt) {
             }
 
             if (it.deviceNetworkId.contains("SCENE")) {
-            	log.trace "it.deviceNetworkId contains SCENE = ${it.deviceNetworkId}"
-				log.trace "contains SCENE / DNI = ${it.deviceNetworkId}"
+            	logMessage("it.deviceNetworkId contains SCENE = ${it.deviceNetworkId}", "trace")
+				logMessage("contains SCENE / DNI = ${it.deviceNetworkId}", "trace")
     	        def sceneId = it.deviceNetworkId.split("/")[1] - "SCENE"
-        	    log.debug "sceneId = ${sceneId}"
+        	    logMessage("sceneId = ${sceneId}", "trace")
                 def sceneFromBridge = bridge.value.scenes[sceneId]
-                log.trace "sceneFromBridge = ${sceneFromBridge}"
+                logMessage("sceneFromBridge = ${sceneFromBridge}", "trace")
                 if ( sceneFromBridge != null ) { // If user removes scene from hue without removing it from smartthings,
                     def sceneLights = []         // getChildDevices() will still return the scene as part of the array as null, so we need to check for it to prevent crashing.
                     sceneLights = sceneFromBridge.lights
                     def scenelightStates = sceneFromBridge.lightStates
 
-	                log.trace "bridge.value.scenes[${sceneId}].lights = ${sceneLights}"
-				    log.trace "bridge.value.scenes[${sceneId}].lightStates = ${scenelightStates}"
+	                logMessage("bridge.value.scenes[${sceneId}].lights = ${sceneLights}", "trace")
+				    logMessage("bridge.value.scenes[${sceneId}].lightStates = ${scenelightStates}", "trace")
 
             	    if (bridge.value.scenes[sceneId].lights) {
 					    it.updateStatus("scene", "lights", bridge.value.scenes[sceneId].lights)
@@ -879,53 +894,20 @@ def locationHandler(evt) {
                 state.params.linkDone = true
                 state.params.username = body.success[0].username
             } else if (body.error && body.error[0] && body.error[0].description) {
-                log.debug "error: ${body.error[0].description}"
+                logMessage("error: ${body.error[0].description}", "error")
             } else {
-                log.debug "unknown response: ${headerString}"
-                log.debug "unknown response: ${body}"
+                logMessage("unknown response: ${headerString}", "error")
+                logMessage("unknown response: ${body}", "error")
             }
         }
     }
 }
-
-def Hubinstall(evt){
-    def parsedEvent = parseLanMessage(description)
-										
-    if (parsedEvent?.ssdpTerm?.contains("urn:schemas-upnp-org:device:basic:1")) {
-        /* SSDP response */
-		log.debug "SSDP Response"	
-        processDiscoveryResponse(parsedEvent)
-    } else if (parsedEvent.headers && parsedEvent.body) {
-        /* Hue bridge HTTP reply */
-        def headerString = parsedEvent.headers.toString()
-        if (headerString.contains("xml")) {
-			log.debug "HeaderString: XML"	
-            /* description.xml reply, verifying bridge */
-            processVerifyResponse(parsedEvent.body)
-        } else if (headerString?.contains("json")) {
-			log.debug "HeaderString: JSON"	
-            def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
-            if (body.success != null && body.success[0] != null && body.success[0].username) {
-                log.debug "Got Username From Bridge"	
-				/* got username from bridge */
-                state.params.linkDone = true
-                state.params.username = body.success[0].username
-            } else if (body.error && body.error[0] && body.error[0].description) {
-                log.debug "error: ${body.error[0].description}"
-            } else {
-                log.debug "unknown response: ${headerString}"
-                log.debug "unknown response: ${body}"
-            }
-        }
-    }
-}
-
 
 /**
  * HUE BRIDGE COMMANDS
  **/
 private discoverHueBridges() {
-    log.debug("Sending bridge discovery.")
+    logMessage("Sending bridge discovery", "info")
     sendHubCommand(new physicalgraph.device.HubAction("lan discovery urn:schemas-upnp-org:device:basic:1", physicalgraph.device.Protocol.LAN))
 }
 
@@ -936,10 +918,10 @@ private verifyHueBridges() {
         def port = convertHexToInt(it.value.deviceAddress)
         verifyHueBridge("${it.value.mac}", (ip + ":" + port))
     }
-}
+}	
 
 private verifyHueBridge(String deviceNetworkId, String host) {
-	log.trace "Verify Hue Bridge $deviceNetworkId"
+	logMessage("Verify Hue Bridge ${deviceNetworkId}", "info")
 	sendHubCommand(new physicalgraph.device.HubAction([
 			method: "GET",
 			path: "/description.xml",
@@ -953,14 +935,14 @@ private verifyHueBridge(String deviceNetworkId, String host) {
  * HUE BRIDGE RESPONSES
  **/
 private processDiscoveryResponse(parsedEvent) {
-	log.debug("Discovery Response is ${parsedEvent}.")
-    log.debug("Discovered bridge ${parsedEvent.mac} (${convertHexToIP(parsedEvent.networkAddress)})")
+	logMessage("Discovery Response is ${parsedEvent}", "trace")
+    logMessage("Discovered bridge ${parsedEvent.mac} (${convertHexToIP(parsedEvent.networkAddress)})", "info")
 
     def bridge = getUnlinkedBridges().find{it?.key?.contains(parsedEvent.ssdpUSN)} 
     if (!bridge) { bridge = getLinkedBridges().find{it?.key?.contains(parsedEvent.ssdpUSN)} }
     if (bridge) {
         /* have already discovered this bridge */
-        log.debug("Previously found bridge discovered")
+        logMessage("Previously found bridge discovered", "trace")
         /* update IP address */
         if (parsedEvent.networkAddress != bridge.value.networkAddress) {
         	bridge.value.networkAddress = parsedEvent.networkAddress
@@ -971,37 +953,36 @@ private processDiscoveryResponse(parsedEvent) {
         }
     } else { 
     
-        log.debug("Found new bridge.")
+        logMessage("Found new bridge", "info")
         state.unlinked_bridges << ["${parsedEvent.ssdpUSN}":parsedEvent]
    }
 }
 
 private processVerifyResponse(physicalgraph.device.HubResponse hubResponse) {
-    log.trace "description.xml response (application/xml)"
+    logMessage("description.xml response (application/xml)", "trace")
 	def body = hubResponse.xml
-    log.debug("Processing verify response.")
+    logMessage("Processing verify response", "info")
     if (body?.device?.modelName?.text().startsWith("Philips hue bridge")) {
-        log.debug(body?.device?.UDN?.text())
+        logMessage(body?.device?.UDN?.text())
         def bridge = getUnlinkedBridges().find({it?.key?.contains(body?.device?.UDN?.text())})
         if (bridge) {
-            log.debug("found bridge!")
+            logMessage("Found Bridge!", "info")
             bridge.value << [name:body?.device?.friendlyName?.text(), serialNumber:body?.device?.serialNumber?.text(), verified: true, itemsDiscovered: false]
         } else {
-            log.error " /description.xml returned a bridge that didn't exist"
+            logMessage(" /description.xml returned a bridge that didn't exist", "error")
         }
     }
 }
 
 
 private sendDeveloperReq(mac) {
-	//log.debug("Sending developer request to ${ip} (${mac})")
     def token = app.id
-    log.debug "MAC is ${mac}"
+    logMessage("MAC Address is ${mac}", "info")
     
     def bridge = getBridge(mac)
     def host = bridge.value.networkAddress
     host = "${convertHexToIP(host)}" + ":80"
-    log.debug "Host is ${host}"
+    logMessage("IP Address is ${host}", "info")
     
 	    sendHubCommand(new physicalgraph.device.HubAction([
 			method: "POST",
@@ -1014,7 +995,7 @@ private sendDeveloperReq(mac) {
 
 void usernameHandler(physicalgraph.device.HubResponse hubResponse) {
 		def body = hubResponse.json
-        log.debug "Button Pressed - Link Done - Save Username"
+        logMessage("Button Pressed - Link Done - Save Username", "info")
 		if (body.success != null) {
 			if (body.success[0] != null) {
 				if (body.success[0].username)
@@ -1025,7 +1006,7 @@ void usernameHandler(physicalgraph.device.HubResponse hubResponse) {
 			}
 		} else if (body.error != null) {
 			//TODO: handle retries...
-			log.error "ERROR: application/json ${body.error}"
+			logMessage("ERROR: application/json ${body.error}", "error")
 		}
 	}
 
@@ -1059,8 +1040,8 @@ def getCommandHub(id) {
     def ipAddr
     def userName
  
-    log.debug("In getCommandData()")
-    log.debug("id = ${id}")
+    logMessage("In getCommandData()", "trace")
+    logMessage("id = ${id}", "trace")
     
     if( id.contains("/") ) {
        devId = ids[1] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"
@@ -1078,24 +1059,24 @@ def getCommandHub(id) {
                   username: "${userName}",
                   deviceId: "${devId}",  ]
     
-    log.debug("Out getCommandData = ${result}")
+    logMessage("Out getCommandData = ${result}", "trace")
     
     return result
 }
 
 def getGLightsDNI(groupId,bridgemac) {
-	log.trace "getGLightsDNI( from Group ${groupId} )"
+	logMessage("getGLightsDNI( from Group ${groupId} )", "trace")
     //def mac = state.mac
     def mac = bridgemac
     //log.debug "${mac}"
     def bridge = getBridge(mac)
   
     def groupLights = bridge.value.groups[groupId].lights
-    log.debug "bridge.value.groups[groupId].lights = ${groupLights}"
+    logMessage("bridge.value.groups[groupId].lights = ${groupLights}", "trace")
     
     groupLights = groupLights - "[" - "]"
 	def gLights = groupLights 
-    log.debug "gLights = ${gLights}"
+    logMessage("gLights = ${gLights}", "trace")
 	
     def gLightDevId
 	def gLightDNI 
@@ -1103,25 +1084,25 @@ def getGLightsDNI(groupId,bridgemac) {
     
     gLights.each { gl ->
     	gLightDevId = "${mac}/BULB${gl}"
-        log.debug "Light devId = ${gLightDevId}"
+        logMessage("Light devId = ${gLightDevId}", "trace")
     	gLightDNI = getChildDevice(gLightDevId)
         gLightsDNI << gLightDNI
     }    
-    log.debug "gLightsDNI = ${gLightsDNI}"
+    logMessage("gLightsDNI = ${gLightsDNI}", "trace")
     
     return gLightsDNI
 }    
         
 def getSLightsDNI(sceneId) {
-	log.trace "getSLightsDNI( from Scene ${sceneId} )"
+	logMessage("getSLightsDNI( from Scene ${sceneId} )", "trace")
     def mac = state.mac
     def bridge = getBridge(mac)
     def sceneLights = bridge.value.scene[sceneId].lights
-    log.debug "bridge.value.scene[sceneId].lights = ${sceneLights}"
+    logMessage("bridge.value.scene[sceneId].lights = ${sceneLights}", "trace")
     
     sceneLights = sceneLights - "[" - "]"
 	def sLights = sceneLights 
-    log.debug "sLights = ${sLights}"
+    logMessage("sLights = ${sLights}", "trace")
 	
     def sLightDevId
 	def sLightDNI 
@@ -1129,11 +1110,11 @@ def getSLightsDNI(sceneId) {
     
     sLights.each { sl ->
     	sLightDevId = "${mac}/BULB${gl}"
-        log.debug "Light devId = ${sLightDevId}"
+        logMessage("Light devId = ${sLightDevId}", "trace")
     	sLightDNI = getChildDevice(sLightDevId)
         sLightsDNI << sLightDNI
     }    
-    log.debug "sLightsDNI = ${sLightsDNI}"
+    logMessage("sLightsDNI = ${sLightsDNI}", "trace")
     
     return sLightsDNI
 } 
@@ -1147,7 +1128,7 @@ private String convertHexToIP(hex) {
 }
 
 def scaleLevel(level, fromST = false, max = 254) {
-	log.trace "ScaleLevel( ${level}, ${fromST}, ${max} )"
+	logMessage("ScaleLevel( ${level}, ${fromST}, ${max} )", "info")
     /* scale level from 0-254 to 0-100 */
     
     if (fromST) {
@@ -1159,17 +1140,17 @@ def scaleLevel(level, fromST = false, max = 254) {
         	return Math.round( level * 100 / max )
 		}
     }    
-    log.trace "scaleLevel returned ${scaled}."
+    logMessage("scaleLevel returned ${scaled}", "info")
     
 }
 
 def parse(desc) {
-    log.debug("parse")
+    logMessage("parse")
 }
 
 def doDeviceSync(inItems = null) {
 	state.limitation = inItems
-	log.debug "Doing Hue Device Sync!  inItems = ${inItems}"
+	logMessage("Doing Hue Device Sync!", "info")
     state.doingSync = true
     try {
 		subscribe(location, null, locationHandler, [filterEvents:false])
@@ -1183,4 +1164,24 @@ def doDeviceSync(inItems = null) {
 	}
 	discoverHueBridges()
     state.doingSync = false
+}
+
+def logMessage(String text, String type = null){
+	if(debug == "On" || debug == "" || debug == null){
+    	if(type == "" || type == null || type == "debug"){
+    		log.debug "${text}"
+    	}
+    	else if(type == "trace"){
+    		log.trace "${text}"
+    	}
+    	else if(type == "info"){
+    		log.info "${text}"
+    	}
+    	else if(type == "warn"){
+    		log.warn "${text}"
+    	}
+    	else{
+    		log.error "${text}"
+	}
+  }  
 }
