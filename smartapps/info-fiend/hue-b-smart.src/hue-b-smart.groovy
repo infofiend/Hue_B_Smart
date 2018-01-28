@@ -267,7 +267,7 @@ def bridges() {
     // Send bridge discovery request every 15 seconds
     if ((state.bridgeRefreshCount % 5) == 1) {
         discoverHueBridges()
-        logMessage("Bridge Discovery Sent - Version is 1.5", "warn")
+        logMessage("Bridge Discovery Sent - Version is 1.6", "warn")
     } else {
         // if we're not sending bridge discovery, verify bridges instead
         verifyHueBridges()
