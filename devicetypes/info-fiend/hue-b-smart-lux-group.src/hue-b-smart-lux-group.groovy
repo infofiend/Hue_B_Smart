@@ -84,11 +84,11 @@ metadata {
 		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
 	}
         
-	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-            state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
+	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+            state "transitiontime", label: 'Transition Time: ${currentValue}'
         }
 
-	valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+	valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 		state "default", label: 'GroupID: ${currentValue}'
 	}	
 

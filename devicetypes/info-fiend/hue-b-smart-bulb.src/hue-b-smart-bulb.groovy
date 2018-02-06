@@ -129,7 +129,7 @@ metadata {
 		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
 	}
 
-	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 3) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 	}
         
@@ -149,16 +149,16 @@ metadata {
 		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-single"
 	}
 
-        valueTile("colormode", "device.colormode", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+        valueTile("colormode", "device.colormode", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
 		state "default", label: 'Colormode: ${currentValue}'
 	}
         
-        valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-		state "default", label: 'reachable: ${currentValue}'
+        valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+		state "default", label: 'Reachable: ${currentValue}'
 	}
 
-        valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
-            	state "transitionTime", label: 'Transitiontime is ${currentValue}'
+        valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+            	state "transitionTime", label: 'Transition Time: ${currentValue}'
         }
         
         standardTile("toggleColorloop", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
@@ -169,7 +169,7 @@ metadata {
 
 	}
 	main(["rich-control"])
-	details(["rich-control", "saturationLabel", "saturationSliderControl", "saturationValue", "hueLabel", "hueSliderControl", "hueValue", "CTLabel", "colorTemperature", "valueCT", "colormode", "reachable", "flash", "toggleColorloop", "reset","refresh", "transitiontime"])	//  "host", "username",
+	details(["rich-control", "saturationLabel", "saturationSliderControl", "saturationValue", "hueLabel", "hueSliderControl", "hueValue", "CTLabel", "colorTemperature", "valueCT", "flash", "toggleColorloop", "reset", "colormode", "transitiontime" , "reachable" ,"refresh"])	//  "host", "username",
 }
 
 private configure() {		

@@ -108,7 +108,7 @@ metadata {
 		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-multi"
 	}
 
-	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 3) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 	}
         
@@ -143,16 +143,16 @@ metadata {
 		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
 	}
 
-	valueTile("colormode", "device.colormode", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+	valueTile("colormode", "device.colormode", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
 		state "default", label: 'Colormode: ${currentValue}'
 	}
 
-	valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+	valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
 		state "default", label: 'GroupID: ${currentValue}'
 	}		
 
-	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 4, height: 2) {
-        	state "transitionTime", label: 'Transitiontime is ${currentValue}'
+	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 4, height: 1) {
+        	state "transitionTime", label: 'Transition Time: ${currentValue}'
         }
 
 	standardTile("toggleColorloop", "device.effect", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
@@ -163,7 +163,7 @@ metadata {
 
 	}
 	main(["rich-control"])
-	details(["rich-control","valueHue","hue","valueSat","saturation","valueCT","colorTemperature","colormode", "groupID", "toggleColorloop","transitiontime","flash","reset","refresh"]) //  "host", "username", 
+	details(["rich-control","valueHue","hue","valueSat","saturation","valueCT","colorTemperature", "toggleColorloop", "flash","reset", "colormode", "transitiontime", "groupID","refresh"]) //  "host", "username", 
 }
 
 private configure() {		

@@ -72,7 +72,7 @@ metadata {
         }
                
     main "switch"
-    details (["switch", "lights", "updateScene", "refresh","sceneID"])
+    details (["switch", "updateScene", "refresh", "lights", "sceneID"])
 	}
 }
 
