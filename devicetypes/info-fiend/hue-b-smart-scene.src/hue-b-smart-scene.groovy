@@ -46,7 +46,8 @@ metadata {
 	tiles (scale: 2) {
 	    multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 		tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-		attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#00a0dc"
+		attributeState "off", label: 'push', action: "momentary.push", backgroundColor: "#ffffff",icon: "st.lights.philips.hue-multi", nextState: "on"
+        	attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#00a0dc"
 			}
 	}
     
@@ -109,6 +110,8 @@ def off() {
  **/
 def push() {
 	def theGroup = device.currentValue("group") ?: 0
+    sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+	sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
     sendEvent(name: "momentary", value: "pushed", isStateChange: true)    
 	setToGroup()
 }
