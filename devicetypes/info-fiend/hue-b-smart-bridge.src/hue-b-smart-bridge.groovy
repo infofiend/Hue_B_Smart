@@ -50,13 +50,13 @@ metadata {
         		state "default", label:"Hue Bridge", inactivelabel:true, icon:"st.Lighting.light99-hue", backgroundColor: "#cccccc"
         }
 		valueTile("idNumber", "device.idNumber", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
-			state "default", label:'ID: ${currentValue}'
+			state "default", label:'MAC Address:\n ${currentValue}'
 		}
 		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
-			state "default", label:'IP: ${currentValue}'
+			state "default", label:'IP Address:\n ${currentValue}'
 		}
 		valueTile("username", "device.username", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
-			state "default", label:'username: ${currentValue}'
+			state "default", label:'Username:\n ${currentValue}'
 		}
 		
 	main "bridge"

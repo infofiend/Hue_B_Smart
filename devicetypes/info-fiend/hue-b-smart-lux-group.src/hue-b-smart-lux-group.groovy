@@ -73,7 +73,7 @@ metadata {
 	}
 
 	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-multi"
+		state "default", label:"Reset", action:"reset", icon:"st.lights.philips.hue-multi"
 	}
 	
 	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -94,7 +94,7 @@ metadata {
 
 	}
 	main(["rich-control"])
-	details(["rich-control","reset","flash", "refresh", "groupID" ,"transitiontime"])
+	details(["rich-control","flash", "reset", "refresh", "transitiontime", "groupID"])
 }
 
 private configure() {		

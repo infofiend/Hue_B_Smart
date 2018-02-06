@@ -80,29 +80,29 @@ metadata {
 				attributeState "level", action:"switch level.setLevel", range:"(0..100)"
 			}
 	}
-
-	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-multi"
-	}
-	
-	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-	}
 	
 	valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
 		state "colorTemperature", label: 'Color Temp:  ${currentValue}'
 	}
         
 	controlTile("colorTemperature", "device.colorTemperature", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
-   	state "setCT", action:"setColorTemperature"
+		state "setCT", action:"setColorTemperature"
 	}
-        
-	standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+    
+    standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
 	}
-        
+    
+    standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"Reset", action:"reset", icon:"st.lights.philips.hue-multi"
+	}
+  
+    standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+	}
+    
 	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
-            state "transitiontime", label: 'Transition Time: ${currentValue}'
+		state "transitiontime", label: 'Transition Time: ${currentValue}'
     }
 
 	valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
@@ -111,7 +111,7 @@ metadata {
 
 	}
 	main(["rich-control"])
-	details(["rich-control","valueCT","colorTemp", "colorTemperature","reset","flash","refresh", "transitiontime", "groupID"])
+	details(["rich-control","valueCT", "colorTemperature","flash","reset","refresh", "transitiontime", "groupID"])
 }
 
 private configure() {		
