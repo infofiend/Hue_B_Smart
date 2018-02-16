@@ -183,9 +183,9 @@ def linkButton(params) {
 
         def d = addChildDevice("info_fiend", "Hue B Smart Bridge", bridge.value.mac, bridge.value.hub, [label: "Hue B Smart Bridge (${params.ip}", username: "${params.username}", networkAddress: "${params.ip}", host: "${state.host}"])
 		
-//        d.sendEvent(name: "networkAddress", value: params.ip)
+        d.sendEvent(name: "networkAddress", value: params.ip)
         d.sendEvent(name: "serialNumber", value: bridge.value.serialNumber)
-//        d.sendEvent(name: "username", value: params.username)
+        d.sendEvent(name: "username", value: params.username)
         
         subscribe(d, "itemDiscovery", itemDiscoveryHandler)
 
