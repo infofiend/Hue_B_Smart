@@ -1,7 +1,7 @@
 /**
  *  Hue B Smart Scene
  *
- *  Copyright 2016 Anthony Pastor
+ *  Copyright 2018 Anthony Pastor
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -13,9 +13,9 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  * 		version 1.1 added setTo2Groups() - use this function to set scene to two different groups at once 
- *  	Version 1.2	TMLeafs Fork v 1.5
- 
- *		Version 1.3	Cleaned update code; removed unneeded hub calls via parent.doDeviceSync; refresh now calls doScenesSync
+ *  	Version 1.2	added TMLeafs edits
+ *
+ *		Version 2.0	Cleaned update code; removed unneeded hub calls via parent.doDeviceSync; refresh now calls doScenesSync
  */
 metadata {
 	definition (name: "Hue B Smart Scene", namespace: "info_fiend", author: "Anthony Pastor") {

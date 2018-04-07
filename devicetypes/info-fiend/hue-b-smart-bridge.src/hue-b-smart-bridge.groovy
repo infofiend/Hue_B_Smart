@@ -12,11 +12,14 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *	Version 1 TMLeafs Fork
- *	Version 1.1 Thanks to Detmer for changes and testing
- *	Version 1.5 Remove non working Schedules
- *	Version 1.5 Remove Schedules and other non working code & Clean up
- *	Version 1.6 Added Hue Hub Rules (needs new Hue B Smart Rules DTH); fixed handling of success responses Hue Hub
+ *	Version 1.0
+ *	Version 1.1 - added discoverBulbs, discoverGroups, discoverScenes, discoverSchedules, pollItems, pollBulbs, pollGroups, pollScenes, pollSchedules.
+ * 				- Changed device to multiAttribute tile; added bridge & health check capability; added status attribute; added device-enroll
+ *              - Receipt of successful change to a Group will now cause ST to immediately update status of all bulbs in that group!!!
+ *  Version 1.2 - Fixed problem of devices not loading in HBS smartapp; removed scenes and groups created by new Hue app schedules.
+ *	Version 1.3 - Added TMleafs edits
+ * 	
+ *  Version 2.0 - added Hue Hub Rules (needs new Hue B Smart Rules DTH); fixed handling of success responses Hue Hub
  */
  
 metadata {
