@@ -1,7 +1,7 @@
 /**
  *  Hue B Smart Bridge
  *
- *  Copyright 2016 Anthony Pastor
+ *  Copyright 2017 Anthony Pastor
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -12,21 +12,36 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *	Version 1 TMLeafs Fork
+ *	Version 1.1 Thanks to Detmer for changes and testing
+ *	Version 1.5 Remove non working Schedules
+ *	Version 1.5 Remove Schedules and other non working code & Clean up
+ *	Version 1.6 Added Hue Hub Rules (needs new Hue B Smart Rules DTH); fixed handling of success responses Hue Hub
  */
+ 
 metadata {
 	definition (name: "Hue B Smart Bridge", namespace: "info_fiend", author: "Anthony Pastor") {
-		capability "Actuator"
+	capability "Actuator"
+	capability "Bridge"
+	capability "Health Check"
 
-		attribute "serialNumber", "string"
-		attribute "networkAddress", "string"
-		attribute "username", "string"
-		attribute "host", "string"
+
+	attribute "serialNumber", "string"
+	attribute "networkAddress", "string"
+	attribute "status", "string"
+	attribute "username", "string"
+	attribute "host", "string"
         
 		command "discoverItems"
         command "discoverBulbs"
         command "discoverGroups"
         command "discoverScenes"
-        command "discoverSchedules"
+		command "discoverRules"
+        command "pollItems"
+        command "pollBulbs"
+        command "pollGroups"
+        command "pollScenes"
+        command "pollRules"
         
 	}
 
@@ -35,105 +50,267 @@ metadata {
 	}
 
 	tiles(scale: 2) {
-        standardTile("bridge", "device.username", width: 6, height: 4) {
-        	state "default", label:"Hue Bridge", inactivelabel:true, icon:"st.Lighting.light99-hue", backgroundColor: "#F3C200"
+        	standardTile("bridge", "device.username", width: 6, height: 4) {
+        		state "default", label:"Hue Bridge", inactivelabel:true, icon:"st.Lighting.light99-hue", backgroundColor: "#cccccc"
         }
-		main "bridge"
-		details "bridge"
+		valueTile("idNumber", "device.idNumber", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
+			state "default", label:'MAC Address:\n ${currentValue}'
+		}
+		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
+			state "default", label:'IP Address:\n ${currentValue}'
+		}
+		valueTile("username", "device.username", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
+			state "default", label:'Username:\n ${currentValue}'
+		}
+		
+	main "bridge"
+	details(["bridge", "idNumber", "networkAddress", "username"])	
 	}
 }
 
-def discoverItems(inItems = null) {
-	log.debug "Bridge discovering all items on Hue hub."
+void installed() {
+	log.debug "Installed with settings: ${settings}"
+	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}")
+	initialize()
+}
 
-		def host = this.device.currentValue("networkAddress") + ":80"
-		def username = this.device.currentValue("username")
+def updated() {
+	log.debug "Updated with settings: ${settings}"
+	initialize()
+}
+
+def initialize() {
+    def commandData = parent.getCommandData(device.deviceNetworkId)
+    log.debug "Initialize Bridge ${commandData}"
+    sendEvent(name: "idNumber", value: commandData.deviceId, displayed:true, isStateChange: true)
+    sendEvent(name: "networkAddress", value: commandData.ip, displayed:false, isStateChange: true)
+    sendEvent(name: "username", value: commandData.username, displayed:false, isStateChange: true)
+    state.host = this.device.currentValue("networkAddress") + ":80"
+    state.userName = this.device.currentValue("username")
+    state.initialize = true
+}
+
+
+def discoverItems(inItems = null) {	
+	log.trace "discoverItems: ${discoverItems} (${inItems})"
+	if (state.initialize != true ) { initialize() }
+ 	if (state.user == null ) { initialize() }
+
+   		def host = state.host
+		def username = state.userName
+
+	  	log.debug "*********** ${host} ********"
 		log.debug "*********** ${username} ********"
 		def result 
         
-        if (!inItems) {
-	        result = new physicalgraph.device.HubAction(
-					method: "GET",
-					path: "/api/${username}/",
-					headers: [
-							HOST: host
-					]
-			)
-        }    
-            
-            
-		return result
-//	}        
-}
-
-def discoverBulbs() {
-	log.debug("discoverBulbs: discovering bulbs from Hue hub.")
-
-	    def host = this.device.currentValue("networkAddress") + ":80"
-		def username = this.device.currentValue("username")
-		def result = new physicalgraph.device.HubAction(
+     
+		log.trace "discoverItems: Bridge discovering all items on Hue hub."
+	    result = new physicalgraph.device.HubAction(
+			method: "GET",
+			path: "/api/${username}/",
+			headers: [
+				HOST: host
+			]
+		)
+/**    
+	if	(inItems == "Bulbs") {
+		log.trace "Bridge discovering all BULBS on Hue hub."    
+	    result = new physicalgraph.device.HubAction(
 			method: "GET",
 			path: "/api/${username}/lights/",
 			headers: [
-					HOST: host
+				HOST: host
 			]
-	)
+		)
+    } else if (inItems == "Groups") {
+	log.trace "Bridge discovering all GROUPS on Hue hub."    
+	    result = new physicalgraph.device.HubAction(
+			method: "GET",
+			path: "/api/${username}/groups/",
+			headers: [
+				HOST: host
+			]
+		)
+    } else if (inItems == "Scenes") {
+	log.trace "Bridge discovering all SCENES on Hue hub."    
+	    result = new physicalgraph.device.HubAction(
+			method: "GET",
+			path: "/api/${username}/scenes/",
+			headers: [
+				HOST: host
+			]
+		)
+    } else if (inItems == "Rules") {
+	log.trace "Bridge discovering all RULES on Hue hub."    
+	    result = new physicalgraph.device.HubAction(
+			method: "GET",
+			path: "/api/${username}/rules/",
+			headers: [
+				HOST: host
+			]
+		)
+	} else {
+	log.trace "Bridge discovering ALL DEVICES on Hue hub."    
+	    result = new physicalgraph.device.HubAction(
+			method: "GET",
+			path: "/api/${username}/",
+			headers: [
+				HOST: host
+			]
+		)
+	}
 	return result
+**/
+
+	
+
+}
+
+def pollItems() {
+	log.trace "pollItems: polling state of all items from Hue hub."
+
+	def host = state.host
+	def username = state.userName
+        
+	sendHubCommand(new physicalgraph.device.HubAction(
+	method: "GET",
+	path: "/api/${username}/",
+		headers: [
+			HOST: host
+		]
+	))
+	    
+}
+
+def discoverBulbs() {
+	log.trace "discoverBulbs: discovering bulbs from Hue hub."
+
+	def host = state.host
+	def username = state.userName
+        
+	def result = new physicalgraph.device.HubAction(
+	method: "GET",
+	path: "/api/${username}/lights/",
+		headers: [
+			HOST: host
+		]
+	)
+	
+    return result
+}
+
+def pollBulbs() {
+	log.trace "ollBulbs: polling bulbs state from Hue hub."
+
+	def host = state.host
+	def username = state.userName
+        
+	sendHubCommand(new physicalgraph.device.HubAction(
+	method: "GET",
+	path: "/api/${username}/lights/",
+		headers: [
+			HOST: host
+		]
+	))
+	    
 }
 
 def discoverGroups() {
 	log.debug("discoverGroups: discovering groups from Hue hub.")
 
-	    def host = this.device.currentValue("networkAddress") + ":80"
-		def username = this.device.currentValue("username")
-		def result = new physicalgraph.device.HubAction(
-			method: "GET",
-			path: "/api/${username}/groups/",
-			headers: [
-					HOST: host
-			]
+	def host = state.host
+	def username = state.userName
+        
+	def result = new physicalgraph.device.HubAction(
+		method: "GET",
+		path: "/api/${username}/groups/",
+		headers: [
+			HOST: host
+		]
 	)
+    
 	return result
 }
 
-def discoverScenes() {
-	log.debug("discoverScenes: discovering scenes from Hue hub.")
+def pollGroups() {
+	log.trace "pollGroups: polling groups state from Hue hub."
 
-	    def host = this.device.currentValue("networkAddress") + ":80"
-		def username = this.device.currentValue("username")
-		def result = new physicalgraph.device.HubAction(
-			method: "GET",
-			path: "/api/${username}/scenes/",
-			headers: [
-					HOST: host
-			]
-	)
-	return result
+	def host = state.host
+	def username = state.userName
+        
+	sendHubCommand(new physicalgraph.device.HubAction(
+	method: "GET",
+	path: "/api/${username}/groups/",
+		headers: [
+			HOST: host
+		]
+	))
+	    
 }
 
-def discoverSchedules() {
-	log.debug("discoverSchedules: discovering schedules from Hue hub.")
+def pollScenes() {
+	log.trace "pollGroups: polling scenes state from Hue hub."
 
-	    def host = this.device.currentValue("networkAddress") + ":80"
-		def username = this.device.currentValue("username")
-		def result = new physicalgraph.device.HubAction(
-			method: "GET",
-			path: "/api/${username}/schedules/",
-			headers: [
-					HOST: host
-			]
-	)
-	return result
+	def host = state.host
+	def username = state.userName
+        
+	sendHubCommand(new physicalgraph.device.HubAction(
+	method: "GET",
+	path: "/api/${username}/scenes/",
+		headers: [
+			HOST: host
+		]
+	))
+	    
 }
 
+def discoverRules() {
+	log.trace "discoverRules: discovering rules from Hue hub."
+
+	def host = state.host
+	def username = state.userName
+        
+	def result = new physicalgraph.device.HubAction(
+	method: "GET",
+	path: "/api/${username}/rules/",
+		headers: [
+			HOST: host
+		]
+	)
+	
+    return result
+}
+
+def pollRules() {
+	log.trace "pollRules: polling rules state from Hue hub."
+
+	def host = state.host
+	def username = state.userName
+        
+	sendHubCommand(new physicalgraph.device.HubAction(
+	method: "GET",
+	path: "/api/${username}/rules/",
+		headers: [
+			HOST: host
+		]
+	))
+	    
+}
 
 def handleParse(desc) {
-log.debug("handle")
+
+	log.trace "handleParse()"
 	parse(desc)
+
 }
 
+
 // parse events into attributes
+
 def parse(String description) {
+
+	//log.trace "parse()"
+	
 	def parsedEvent = parseLanMessage(description)
 	if (parsedEvent.headers && parsedEvent.body) {
 		def headerString = parsedEvent.headers.toString()
@@ -142,123 +319,117 @@ def parse(String description) {
 			def bridge = parent.getBridge(parsedEvent.mac)
             def group 
 
-	/* responses from bulb/group/scene/schedule command. Figure out which device it is, then pass it along to the device. */
+            
+			/* responses from bulb/group/scene/rules command. Figure out which device it is, then pass it along to the device. */
 			if (body[0] != null && body[0].success != null) {
-            	log.trace "${body[0].success}"
-				body.each{
+				body.each {
+                	
 					it.success.each { k, v ->
 						def spl = k.split("/")
-						log.debug "k = ${k}, split1 = ${spl[1]}, split2 = ${spl[2]}, split3 = ${spl[3]}, split4= ${spl[4]}, value = ${v}"                            
+						log.debug "k = ${k}, split1 = ${spl[1]}, split2 = ${spl[2]}, split3 = ${spl[3]}, value = ${v}"	//, split3 = ${spl[3]}, split4= ${spl[4]}                            
 						def devId = ""
-                        def d
-                        def groupScene
-						
-                      
-						if (spl[4] == "schedules" || it.toString().contains("command")) {		
-                    			devId = bridge.value.mac + "/SCHEDULE" + k
-                    	        log.debug "SCHEDULES: k = ${k}, split3 = ${spl[1]}, split4= ${spl[2]}, value = ${v}"
-	                            sch = parent.getChildDevice(devId)
-    	                        schId = spl[2]
-								def username = this.device.currentValue("username")
-            	                def host = this.device.currentValue("networkAddress") + ":80"
+            	        def d
+                    	// RULE STATUS RESPONSE    
+						if (spl[1] == "rules" ) {	
+							log.trace "HBS Bridge Response (RULE) == ${body}"                          
+							devId = bridge.value.mac + "/RULE" + spl[2]
+							log.debug "rule devID = ${devID} || value = ${v}"
+							d = parent.getChildDevice(devId)
+             	            log.trace "Update rule ${spl[2]}' attribute ${spl[3]} with value ${v}"
+		                    d.updateStatus("rule", spl[3], v)
+
+						// SCENES RESPONSES							
+                    	} else if (spl[1] == "scene" ) {	
+							log.trace "HBS Bridge Response (SCENE) == ${body}"
+							log.debug "Scene ${d.label} successfully run on group ${groupScene}."						                                
+   	               			devId = bridge.value.mac + "/SCENE" + v
+    	                    d = parent.getChildDevice(devId)
+							log.debug "k = ${k}, split1 = ${spl[1]}, split2 = ${spl[2]}, split3 = ${spl[3]}, value = ${v}"	//, split3 = ${spl[3]}, split4= ${spl[4]}                            
+
+							//if (spl[
+							log.trace "Update rule ${spl[2]}s attribute ${spl[3]} with value ${v}"                           	  
+           	                d.updateStatus(spl[3], spl[4], v) 
+
+                   		// GROUPS RESPONSES
+						} else if (spl[1] == "groups" ) {    
+            	        	log.trace "HBS Bridge Response (GROUP) == ${body}"
+   	                        devId = bridge.value.mac + "/GROUP" + spl[2]
+       		    	        //log.debug "GROUP: devId = ${devId}"
+                               
+                           	// UPDATE THE GROUP (if not GROUP 0)
+                            if (spl[2] != "0") {
                             
-								log.debug "schedule ${schId} successfully enabled/disabled."
-
-                    	        parent.doDeviceSync("schedules")
-
-						} else if (spl[4] == "scene" || it.toString().contains( "lastupdated") ) {	//if ( it.toString().contains( "lastupdated") ) {				// (spl[4] == "scene") {
-
-                    			devId = bridge.value.mac + "/SCENE" + v
-	                            d = parent.getChildDevice(devId)
-    	                        groupScene = spl[2]
-								def username = this.device.currentValue("username")
-            	                def host = this.device.currentValue("networkAddress") + ":80"
-                            
-								log.debug "Scene ${d} successfully run on group ${groupScene}."
-						//		log.debug "calling ${d}" + ".updateStatus(" + "${spl[3]} , ${spl[4]} , ${v}" + ")"
-                        
-                    	        parent.doDeviceSync("scenes")
-						} else { 
-	                        if (spl[1] == "groups" && spl[2] != 0 ) {    //if ( it.toString().contains( "action" ) ) {
-            	        			devId = bridge.value.mac + "/" + spl[1].toUpperCase()[0..-2] + spl[2]
-        	    	                log.debug "GROUP: devId = ${devId}"                            
-	
-									d = parent.getChildDevice(devId)
-							//		log.debug "calling ${d}" + ".updateStatus(" + "${spl[3]} , ${spl[4]} , ${v}" + ")"
-									d.updateStatus(spl[3], spl[4], v) 
-							} else {
-									if (spl[1] == "lights") {
-										spl[1] = "BULBS"
-								
-										devId = bridge.value.mac + "/" + spl[1].toUpperCase()[0..-2] + spl[2]
-										d = parent.getChildDevice(devId)
-	                    	    //	    log.debug "calling ${d}" + ".updateStatus(" + "${spl[3]} , ${spl[4]} , ${v}" + ")"
-										d.updateStatus(spl[3], spl[4], v)
-									}                                    
-            	            }    
-						}
+								d = parent.getChildDevice(devId)
+								d.updateStatus(spl[3], spl[4], v)        					                       
+		                        //NOW UPDATE THE LIGHTS IN THE GROUP
+							    def gLights = []
+                           
+								gLights = parent.getGLightsDNI(spl[2], bridge.value.mac)
+            	           		gLights.each { gl ->
+                	       			if(gl != null){
+                    	   				gl.updateStatus("state", spl[4], v)
+                     // 	          		log.debug "GLight ${gl}"
+									}
+	   	                    	}
+    						} else {
+                            	
+                                //NEED TO UPDATE ALL BULBS
+                            }    
+						// LIGHTS RESPONSES		
+						} else if (spl[1] == "lights") {
+							log.trace "HBS Bridge Response (BULB) == ${body}"                        
+							spl[1] = "BULBS"
+							devId = bridge.value.mac + "/" + spl[1].toUpperCase()[0..-2] + spl[2]
+							d = parent.getChildDevice(devId)
+                    		d.updateStatus(spl[3], spl[4], v)
+						} else {
+							log.warn "Response contains unknown device type ${ spl[1] } ."                                               	            
+						}            	            
 					}
-				}	
+				}
 			} else if (body[0] != null && body[0].error != null) {
-				log.debug("Error: ${body}")
+				log.warn "Error: ${body}"
 			} else if (bridge) {
-            	
-				def bulbs = [:] //bridge.value.bulbs
-				def groups = [:] //bridge.value.groups
-				def scenes = [:] //bridge.value.scenes
-                def schedules = [:] //bridge.value.schedules
-
-					body.lights?.each { k, v ->
-						bulbs[k] = [id: k, name: v.name, type: v.type, state: v.state]
-				    }
-	                body.groups?.each { k, v -> 
-                    	def devIdsGLights = []
-/**
-						v.lights.each { b->
-                        	def devIdGLight = bridge.value.mac + "/BULBS" + ${b}
-                            devIdsGLights << devIdGLight
-                        }    
-**/                        
-    	                groups[k] = [id: k, name: v.name, type: v.type, action: v.action, all_on: v.state.all_on, any_on: v.state.any_on, lights: v.lights, groupLightDevIds: devIdsGLights]
-					}
-	                body.scenes?.each { k, v -> 
-//                    	log.trace "k=${k} and v=${v}"
-                        				
-                    	scenes[k] = [id: k, name: v.name, type: "scene", lights: v.lights]
-                            
-					}
-                    
-                    body.schedules?.each { k, v -> 
-                    	log.trace "schedules k=${k} and v=${v}"
-                    	def schCommand = v.command.address
-                        log.debug "schCommand = ${schCommand}"
-                        def splCmd = schCommand.split("/")
-//                        log.debug "splCmd[1] = ${splCmd[1]} / splCmd[2] = ${splCmd[2]} / splCmd[3] = ${splCmd[3]} / splCmd[4] = ${splCmd[4]}"                        
-                        def schGroupId = splCmd[4] 
-						log.debug "schGroupId = ${schGroupId}"
-//                    	def schSceneId = bridge.value.mac + "/SCENES" + ${v.command.body.scene}
-    	                schedules[k] = [id: k, name: v.name, type: "schedule", sceneId: v.command.body.scene, groupId: schGroupId, status: v.status]
-					}
-
-                return createEvent(name: "itemDiscovery", value: device.hub.id, isStateChange: true, data: [bulbs, scenes, groups, schedules, bridge.value.mac])
-
-				if (bulbs) {                
-                	return createEvent(name: "bulbDiscovery", value: device.hub.id, isStateChange: true, data: [bulbs, null, null, null, bridge.value.mac])
-				} else if (groups) {                
-                	return createEvent(name: "groupDiscovery", value: device.hub.id, isStateChange: true, data: [null, null, groups, null, bridge.value.mac])
-				} else if (scenes) {                
-                	return createEvent(name: "sceneDiscovery", value: device.hub.id, isStateChange: true, data: [null, scenes, null, null, bridge.value.mac])
-				} else if (schedules) {                
-                	return createEvent(name: "scheduleDiscovery", value: device.hub.id, isStateChange: true, data: [null, null, null, schedules, bridge.value.mac])
-                    
-             	}       
+            	log.trace "HBS Bridge: Doesn't appear to be a response (no success/error), so updating hue device list"
+				def bulbs = [:] 
+				def groups = [:] 
+				def scenes = [:]
+                def rules = [:]
                 
+				body?.lights?.each { k, v ->
+					bulbs[k] = [id: k, label: v.name, type: v.type, state: v.state]
+				}
+				state.bulbs = bulbs
+				    
+	            body?.groups?.each { k, v -> 
+                	groups[k] = [id: k, label: v.name, type: v.type, action: v.action, all_on: v.state.all_on, any_on: v.state.any_on, lights: v.lights] //, groupLightDevIds: devIdsGLights]
+				}
+				state.groups = groups
+				
+	            body.scenes?.each { k, v -> 
+                //log.trace "k=${k} and v=${v}"
+                   	scenes[k] = [id: k, label: v.name, type: "scene", lights: v.lights]
+                }
+                state.scenes = scenes
+                    
+                body.rules?.each { k, v ->
+//	            	log.trace "k=${k} and v=${v}"
+  //                  log.trace "************"
+                                                
+            		rules[k] = [id: k, label: v.name, type: "rule", status: v.status, conditions: v.conditions, actions: v.actions]
+
+											
+                }
+                state.rules = rules	
+                
+            	return createEvent(name: "itemDiscovery", value: device.hub.id, isStateChange: true, data: [bulbs, scenes, groups, rules, bridge.value.mac])
+				    
 			}
+			
 		} else {
 			log.debug("Unrecognized messsage: ${parsedEvent.body}")
 		}
+		
 	}
-    state.limitation = "none"
-	return []
+		return []
 }
-
