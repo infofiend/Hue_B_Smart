@@ -763,16 +763,16 @@ def itemDiscoveryHandler(evt) {
 	def data = parseJson(evt.data)
 	logMessage("evt = ${data}", "trace")
     
-    def bulbs = data[0]
-   log.debug "bulbs from evt.jsonData[0] = ${bulbs}"
-    def scenes = data[1]
-	log.debug "scenes from evt.jsonData[1] = ${scenes}"
-    def groups = data[2]
-	log.debug "groups from evt.jsonData[2] = ${groups}"
-    def schedules = data[3]
-	log.debug "schedules from evt.jsonData[3] = ${schedules}"
-    def mac = data[4]
-	log.debug "mac from evt.jsonData[4] = ${mac}"
+    	def bulbs = data[0]
+    	//log.debug "bulbs = ${bulbs}"
+    	def scenes = data[1]
+	//log.debug "scenes = ${scenes}"
+    	def groups = data[2]
+	//log.debug "groups from = ${groups}"
+    	def schedules = data[3]
+	//log.debug "schedules = ${schedules}"
+    	def mac = data[4]
+	//log.debug "mac = ${mac}"
 
 
 	def bridge = getBridge(mac)
