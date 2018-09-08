@@ -16,7 +16,11 @@
  *	Version 1.1 Thanks to Detmer for changes and testing
  *	Version 1.5 Remove non working Schedules
  *	Version 1.5 Remove Schedules and other non working code & Clean up
+ *	Version 1.7 Made changes to work with ST Backup update on the 6th September
  */
+
+import groovy.json.*
+
 metadata {
 	definition (name: "Hue B Smart Bridge", namespace: "info_fiend", author: "Anthony Pastor") {
 	capability "Actuator"
@@ -230,7 +234,7 @@ def parse(String description) {
 	if (parsedEvent.headers && parsedEvent.body) {
 		def headerString = parsedEvent.headers.toString()
 		if (headerString.contains("application/json")) {
-			def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
+			def body = new groovy.json.JsonSlurperClassic().parseText(parsedEvent.body)
 			def bridge = parent.getBridge(parsedEvent.mac)
             def group 
 			def commandReturn = []
