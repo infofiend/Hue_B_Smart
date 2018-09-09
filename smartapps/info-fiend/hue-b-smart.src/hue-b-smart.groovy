@@ -893,7 +893,7 @@ def locationHandler(evt) {
             /* description.xml reply, verifying bridge */
             processVerifyResponse(parsedEvent.body)
         } else if (headerString?.contains("json")) {
-            def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
+            def body = new groovy.json.JsonSlurperClassic().parseText(parsedEvent.body)
             if (body.success != null && body.success[0] != null && body.success[0].username) {
                 /* got username from bridge */
                 state.params.linkDone = true
