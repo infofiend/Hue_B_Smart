@@ -19,8 +19,12 @@
  *      Version 1.3 Added White Ambience Group
  *	Version 1.4 Added Version Number into log to make sure people are running the latest version when they moan it doesnt work
  *	Version 1.5 Fixed install problem for some users
- *	Version 1.6 Added app settings menu, Updated logs with more than just debug messages, Added option to hide all app logs 
+ *	Version 1.6 Added app settings menu, Updated logs with more than just debug messages, Added option to hide all app logs
+ *	Version 1.7 Made changes to work with ST Backup update on the 6th September
  */
+ 
+import groovy.json.*
+ 
 definition(
         name: "Hue B Smart",
         namespace: "info_fiend",
@@ -267,7 +271,7 @@ def bridges() {
     // Send bridge discovery request every 15 seconds
     if ((state.bridgeRefreshCount % 5) == 1) {
         discoverHueBridges()
-        logMessage("Bridge Discovery Sent - Version is 1.6", "warn")
+        logMessage("Bridge Discovery Sent - Version is 1.7", "warn")
     } else {
         // if we're not sending bridge discovery, verify bridges instead
         verifyHueBridges()
@@ -756,18 +760,19 @@ def initialize() {
 }
 
 def itemDiscoveryHandler(evt) {
-
-	logMessage("evt = ${evt}", "trace")
-    def bulbs = evt.jsonData[0]
- //   log.debug "bulbs from evt.jsonData[0] = ${bulbs}"
-    def scenes = evt.jsonData[1]
-//	log.debug "scenes from evt.jsonData[1] = ${scenes}"
-    def groups = evt.jsonData[2]
-//	log.debug "groups from evt.jsonData[2] = ${groups}"
-    def schedules = evt.jsonData[3]
-//	log.debug "schedules from evt.jsonData[3] = ${schedules}"
-    def mac = evt.jsonData[4]
-//	log.debug "mac from evt.jsonData[4] = ${mac}"
+	def data = parseJson(evt.data)
+	logMessage("evt = ${data}", "trace")
+    
+    	def bulbs = data[0]
+    	//log.debug "bulbs = ${bulbs}"
+    	def scenes = data[1]
+	//log.debug "scenes = ${scenes}"
+    	def groups = data[2]
+	//log.debug "groups from = ${groups}"
+    	def schedules = data[3]
+	//log.debug "schedules = ${schedules}"
+    	def mac = data[4]
+	//log.debug "mac = ${mac}"
 
 
 	def bridge = getBridge(mac)
@@ -888,7 +893,7 @@ def locationHandler(evt) {
             /* description.xml reply, verifying bridge */
             processVerifyResponse(parsedEvent.body)
         } else if (headerString?.contains("json")) {
-            def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
+            def body = new groovy.json.JsonSlurperClassic().parseText(parsedEvent.body)
             if (body.success != null && body.success[0] != null && body.success[0].username) {
                 /* got username from bridge */
                 state.params.linkDone = true

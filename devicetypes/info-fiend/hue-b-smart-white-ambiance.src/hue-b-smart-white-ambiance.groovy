@@ -18,7 +18,7 @@
  *	1.2 Added command flashCoRe for webcore
  *	1.4 Fixed IDE Logging Information + Other Bug Fixes
  *	1.5 Added Light Capability for smartapps
- *
+ *	1.7 Install() defined twice
  */
 preferences {
 	input("tt", "integer", defaultValue: 2, title: "Time it takes for the lights to transition (default: 2 = 200ms)")   
@@ -117,10 +117,6 @@ metadata {
 	}
 	main(["rich-control"])
 	details(["rich-control","valueCT", "colorTemperature","flash","reset","refresh", "transitiontime", "reachable"])
-}
-
-void installed() {
-	sendEvent(name: "DeviceWatch-Enroll", value: "{\"protocol\": \"LAN\", \"scheme\":\"untracked\", \"hubHardwareId\": \"${device.hub.hardwareID}\"}", displayed: false)
 }
 
 private configure() {		
