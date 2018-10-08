@@ -19,7 +19,7 @@
  *
  */
 preferences {
-	input("tt", "integer", defaultValue: 2, title: "Time it takes for the lights to transition (default: 2 = 200ms)")   
+	input("tt", "number", title: "Time it takes for the lights to transition (default: 2 = 200ms)")   
 	input("notiSetting", "enum", required:true ,title: "Notifications", description: "Level of IDE Notifications for this Device?", options: ["All", "Only On / Off", "None"], defaultValue: "All")
 }  
  
@@ -164,7 +164,7 @@ def setLevel(inLevel) {
 	def level = scaleLevel(inLevel, true, 254)
 
 	def commandData = parent.getCommandData(device.deviceNetworkId)
-	def tt = this.device.currentValue("transitionTime") ?: 0
+	def tt = this.device.currentValue("transitionTime") as Integer ?: 0
     
 	parent.sendHubCommand(new physicalgraph.device.HubAction(
     	[
