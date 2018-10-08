@@ -17,6 +17,7 @@
  *	Version 1.5 Remove non working Schedules
  *	Version 1.5 Remove Schedules and other non working code & Clean up
  *	Version 1.7 Made changes to work with ST Backup update on the 6th September
+ *	Version 1.71 Added version information on IDE Logging
  */
 
 import groovy.json.*
@@ -238,7 +239,7 @@ def parse(String description) {
 			def bridge = parent.getBridge(parsedEvent.mac)
             def group 
 			def commandReturn = []
-            
+            log.trace "Version 1.71"
 			/* responses from bulb/group/scene/ command. Figure out which device it is, then pass it along to the device. */
 			if (body[0] != null && body[0].success != null) {
             	log.trace "${body[0].success}"
