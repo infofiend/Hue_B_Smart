@@ -21,6 +21,7 @@
  *	Version 1.5 Fixed install problem for some users
  *	Version 1.6 Added app settings menu, Updated logs with more than just debug messages, Added option to hide all app logs
  *	Version 1.7 Made changes to work with ST Backup update on the 6th September
+ *	Version 1.71 Smartthings was storing Transition Time as decimal when it shouldn't, added done a work around
  */
  
 import groovy.json.*
@@ -271,7 +272,7 @@ def bridges() {
     // Send bridge discovery request every 15 seconds
     if ((state.bridgeRefreshCount % 5) == 1) {
         discoverHueBridges()
-        logMessage("Bridge Discovery Sent - Version is 1.7", "warn")
+        logMessage("Bridge Discovery Sent - Version is 1.71", "warn")
     } else {
         // if we're not sending bridge discovery, verify bridges instead
         verifyHueBridges()
