@@ -19,7 +19,7 @@
  *	1.5 Added Light capability for smartapps
  */
 preferences {
-	input("tt", "integer", defaultValue: 2, title: "Time it takes for the lights to transition (default: 2 = 200ms)")   
+	input("tt", "number", title: "Time it takes for the lights to transition (default: 2 = 200ms)")   
 	input("notiSetting", "enum", required:true ,title: "Notifications", description: "Level of IDE Notifications for this Device?", options: ["All", "Only On / Off", "None"], defaultValue: "All")
 } 
  
@@ -211,10 +211,9 @@ def setLevel(inLevel) {
     if(device.currentValue("idelogging") == "All"){
     log.trace "Hue B Smart Bulb: setLevel ( ${inLevel} ): "}
     def level = scaleLevel(inLevel, true, 254)
-    //log.debug "Setting level to ${level}."
 
     def commandData = parent.getCommandData(device.deviceNetworkId)    
-    def tt = this.device.currentValue("transitionTime") ?: 0
+    def tt = this.device.currentValue("transitionTime") as Integer ?: 0
     
     def sendBody = [:]
     sendBody = ["on": true, "bri": level, "transitiontime": tt]
