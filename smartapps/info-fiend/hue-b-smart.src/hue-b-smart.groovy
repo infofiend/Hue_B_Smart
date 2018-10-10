@@ -482,15 +482,17 @@ def chooseBulbs(params) {
 			addedBulbs.sort{it.value.name}.each { 
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.label
-				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+   				def id = it.value.id
+				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Remove ${name} - BULB ID [${id}]", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Bulbs") {
 			availableBulbs.sort{it.value.name}.each { 
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.label
-				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
-			}
+   				def id = it.value.id
+				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Add ${name} - BULB ID [${id}]", params: [mac: params.mac, add: it.key], submitOnChange: true )
+		}
         }
     }
 }
