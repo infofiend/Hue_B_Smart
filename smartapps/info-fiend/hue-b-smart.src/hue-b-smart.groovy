@@ -574,15 +574,16 @@ def chooseScenes(params) {
 			addedScenes.sort{it.value.name}.each { 
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.label
-				href(name:"${devId}", page:"chooseScenes", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+                		def lights = it.value.lights
+				href(name:"${devId}", page:"chooseScenes", description:"", title:"Remove ${name} - ${lights}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Scenes") {
 			availableScenes.sort{it.value.name}.each { 
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.label
-				href(name:"${devId}", page:"chooseScenes", description:"", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
-			}
+				def lights = it.value.lights
+				href(name:"${devId}", page:"chooseScenes", description:"", title:"Add ${name} - ${lights}", params: [mac: params.mac, add: it.key], submitOnChange: true )}
         }
     }
 }
