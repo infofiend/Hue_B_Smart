@@ -304,8 +304,14 @@ def bridges() {
         section("SmartApp Settings") {
             href(name:"Settings", page:"settings", title: "Settings", description: "")
             }
+	section("Donations:") {
+            href url: textDonateLink(), style:"external", required: false, title:"Donations", description:"Tap to open browser"
+            }    
+	
     }
 }
+
+String textDonateLink() { return "https://www.paypal.me/tmleafs" }
 
 def settings() {
         return dynamicPage(name:"settings", title: "Settings", nexdtPage: "Bridges") {
