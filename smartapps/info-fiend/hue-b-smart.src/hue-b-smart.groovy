@@ -20,8 +20,9 @@
  *	Version 1.4 Added Version Number into log to make sure people are running the latest version when they moan it doesnt work
  *	Version 1.5 Fixed install problem for some users
  *	Version 1.6 Added app settings menu, Updated logs with more than just debug messages, Added option to hide all app logs
- *	Version 1.7 Made changes to work with ST Backup update on the 6th September
+ *	Version 1.7 Made changes to work with ST Backend update on the 6th September
  *	Version 1.71 Smartthings was storing Transition Time as decimal when it shouldn't, added done a work around
+ *	Version 1.8 Added workaround for device subscription not working, Added Extra Bulb Types to reduce IDE Log errors, Added On/Off Plug Device Type
  */
  
 import groovy.json.*
@@ -414,15 +415,28 @@ def chooseBulbs(params) {
 		params.add = null
         def b = bridge.value.bulbs[bulbId]
 		def devId = "${params.mac}/BULB${bulbId}"
-        if (b.type.equalsIgnoreCase("Dimmable light")) {
+        if (b.type.equalsIgnoreCase("Dimmable light") || b.type.equalsIgnoreCase("Dimmable plug-in unit")) {
 			try {
 	            def d = addChildDevice("info_fiend", "Hue B Smart Lux Bulb", devId, bridge.value.hub, ["label": b.label])	
 				["bri", "reachable", "on"].each { p -> 
 					d.updateStatus("state", p, b.state[p])
 				}
                 d.updateStatus("state", "transitiontime", 2)
-                //d.updateStatus("state", "colormode", "HS")                
                 d.configure()
+                addedBulbs[bulbId] = b
+                availableBulbs.remove(bulbId)
+			} catch (grails.validation.ValidationException e) {
+            	logMessage("${devId} already created", "warn")
+			}    
+	    }
+        else if (b.type.contains("Off plug-in unit")) {
+			try {
+	            def d = addChildDevice("info_fiend", "Hue B Smart Plugin Switch", devId, bridge.value.hub, ["label": b.label])	
+				["reachable", "on"].each { p -> 
+					d.updateStatus("state", p, b.state[p])
+				}
+                d.updateStatus("state", "transitiontime", 2)
+				d.configure()
                 addedBulbs[bulbId] = b
                 availableBulbs.remove(bulbId)
 			} catch (grails.validation.ValidationException e) {
@@ -443,7 +457,21 @@ def chooseBulbs(params) {
                 logMessage("${devId} already created", "warn")
             		}
 		}
-		else {
+		else if (b.type.equalsIgnoreCase("Color Light")) {
+			 try {
+                    def d = addChildDevice("info_fiend", "Hue B Smart Bulb", devId, bridge.value.hub, ["label": b.label])
+				 ["bri", "sat", "reachable", "hue", "on", "xy", "effect"].each { p ->
+                        		d.updateStatus("state", p, b.state[p])
+                		}
+                d.updateStatus("state", "transitiontime", 2)
+				d.configure()
+                addedBulbs[bulbId] = b
+                availableBulbs.remove(bulbId)
+           		} catch (grails.validation.ValidationException e) {
+                logMessage("${devId} already created", "warn")
+            		}
+		}
+        else {
 			try {
             	def d = addChildDevice("info_fiend", "Hue B Smart Bulb", devId, bridge.value.hub, ["label": b.label])
                 ["bri", "sat", "reachable", "hue", "on", "xy", "ct", "effect"].each { p ->
@@ -770,7 +798,8 @@ def initialize() {
 }
 
 def itemDiscoveryHandler(evt) {
-	def data = parseJson(evt.data)
+	//def data = parseJson(evt.data)
+	def data = evt
 	logMessage("evt = ${data}", "trace")
     
     	def bulbs = data[0]
@@ -779,9 +808,7 @@ def itemDiscoveryHandler(evt) {
 	//log.debug "scenes = ${scenes}"
     	def groups = data[2]
 	//log.debug "groups from = ${groups}"
-    	def schedules = data[3]
-	//log.debug "schedules = ${schedules}"
-    	def mac = data[4]
+    	def mac = data[3]
 	//log.debug "mac = ${mac}"
 
 
@@ -822,14 +849,22 @@ def itemDiscoveryHandler(evt) {
                 if ( bBulb != null ) {  // If user removes bulb from hue without removing it from smartthings,
                                         // getChildDevices() will still return the scene as part of the array as null, so we need to check for it to prevent crashing.
 				    def type = bBulb.type 	// bridge.value.bulbs[bulbId].type
-               	    if (type.equalsIgnoreCase("Dimmable light")) {
+               	    if (type.equalsIgnoreCase("Dimmable light") || type.equalsIgnoreCase("Dimmable plug-in unit")) {
 					    ["reachable", "on", "bri"].each { p -> 
    	                	    it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
 					    }
-           	        } else if (type.equalsIgnoreCase("Color Temperature Light")) {
+                    } else if (type.contains("Off plug-in unit")) {
+                    	["reachable", "on"].each { p -> 
+   	                	    it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
+						}
+                    } else if (type.equalsIgnoreCase("Color Temperature Light")) {
 					    ["bri", "ct", "reachable", "on"].each { p ->
                        	    it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
     				    }
+                    } else if (type.equalsIgnoreCase("Color Light")) {
+					    ["reachable", "on", "bri", "hue", "sat", "xy","effect", "colormode"].each { p -> 
+                   		    it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
+					    }    
 			        } else {
 					    ["reachable", "on", "bri", "hue", "sat", "ct", "xy","effect", "colormode"].each { p -> 
                    		    it.updateStatus("state", p, bridge.value.bulbs[bulbId].state[p])
