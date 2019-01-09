@@ -16,8 +16,9 @@
  *	Version 1.1 Thanks to Detmer for changes and testing
  *	Version 1.5 Remove non working Schedules
  *	Version 1.5 Remove Schedules and other non working code & Clean up
- *	Version 1.7 Made changes to work with ST Backup update on the 6th September
+ *	Version 1.7 Made changes to work with ST Backend update on the 6th September
  *	Version 1.71 Added version information on IDE Logging
+ *	Version 1.8 Added workaround for device subscription not working, Added Extra Bulb Types to reduce IDE Log errors, Added On/Off Plug Device Type
  */
 
 import groovy.json.*
@@ -315,7 +316,11 @@ def parse(String description) {
                    	}
                   	state.scenes = scenes
                 
-            	return createEvent(name: "itemDiscovery", value: device.hub.id, isStateChange: true, data: [bulbs, scenes, groups, schedules, bridge.value.mac])
+				def itemDiscovery = [:]
+				itemDiscovery = [bulbs,scenes,groups,bridge.value.mac]
+				log.warn "Map $itemDiscovery"
+				parent.itemDiscoveryHandler(itemDiscovery)
+            	//return createEvent(name: "itemDiscovery", value: device.hub.id, isStateChange: true, data: [bulbs, scenes, groups, schedules, bridge.value.mac])
           
 			}
 			
