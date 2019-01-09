@@ -240,7 +240,7 @@ def parse(String description) {
 			def bridge = parent.getBridge(parsedEvent.mac)
             def group 
 			def commandReturn = []
-            log.trace "Version 1.71"
+            log.trace "Version 1.8"
 			/* responses from bulb/group/scene/ command. Figure out which device it is, then pass it along to the device. */
 			if (body[0] != null && body[0].success != null) {
             	log.trace "${body[0].success}"
