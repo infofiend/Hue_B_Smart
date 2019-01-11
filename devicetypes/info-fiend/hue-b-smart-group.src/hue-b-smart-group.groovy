@@ -705,8 +705,8 @@ private updateStatus(action, param, val) {
                 }
                 break
 	    case "lights":
-            	curValue = device.currentValue("lights")
-                if (curValue != val) {
+            	curValue = device.currentValue("lights").toString()
+                if (curValue != val.toString()) {
                 if(idelogging == 'All'){
                		log.debug "Update Needed: Current Value of lights = ${curValue} & newValue = ${val}"}
 	            	sendEvent(name: "lights", value: val, displayed: false, isStateChange: true) 
