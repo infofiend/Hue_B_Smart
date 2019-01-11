@@ -688,16 +688,17 @@ private updateStatus(action, param, val) {
                 }    
                 break
             case "alert":
-            	if (val == "none" && display == 'all') {
+            	if (val == "none" && idelogging == 'All') {
             		log.debug "Not Flashing"            		
-                } else if(val != "none" && display == 'all')  {
+                } else if(val != "none" && idelogging == 'All')  {
                 	log.debug "Flashing"
                 }
                 break
             case "effect":
             	curValue = device.currentValue("effect")
-                if (curValue != val && display == 'all') { 
-               		log.debug "Update Needed: Current Value of effect = ${curValue} & newValue = ${val}" 
+                if (curValue != val) {
+                if(idelogging == 'All'){
+               		log.debug "Update Needed: Current Value of effect = ${curValue} & newValue = ${val}"} 
 	            	sendEvent(name: "effect", value: val, displayed: false, isStateChange: true) 
 			} else {
 			//log.debug "NO Update Needed for effect "                	
@@ -705,15 +706,16 @@ private updateStatus(action, param, val) {
                 break
 	    case "lights":
             	curValue = device.currentValue("lights")
-                if (curValue != val && display == 'all') { 
-               		log.debug "Update Needed: Current Value of lights = ${curValue} & newValue = ${val}" 
+                if (curValue != val) {
+                if(idelogging == 'All'){
+               		log.debug "Update Needed: Current Value of lights = ${curValue} & newValue = ${val}"}
 	            	sendEvent(name: "lights", value: val, displayed: false, isStateChange: true) 
 			} else {
 			//log.debug "NO Update Needed for lights"
                 }
                 break
             case "scene":
-            	if (display == 'all'){
+            	if (idelogging == 'All'){
             	log.trace "received scene ${val}"
                 }
                 break    
