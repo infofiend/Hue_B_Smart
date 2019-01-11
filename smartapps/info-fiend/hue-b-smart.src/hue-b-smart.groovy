@@ -23,6 +23,7 @@
  *	Version 1.7 Made changes to work with ST Backend update on the 6th September
  *	Version 1.71 Smartthings was storing Transition Time as decimal when it shouldn't, added done a work around
  *	Version 1.8 Added workaround for device subscription not working, Added Extra Bulb Types to reduce IDE Log errors, Added On/Off Plug Device Type
+ * 	Version 1.81 Bug Fixes
  */
  
 import groovy.json.*
@@ -885,10 +886,12 @@ def itemDiscoveryHandler(evt) {
            	            	test = bridge.value.groups[groupId].action[p]
                        	    it.updateStatus("action", p, bridge.value.groups[groupId].action[p])
         	    		}
+                        it.updateStatus("action", "lights", bridge.value.groups[groupId]["lights"])
 			    	}else{
 				    	 ["bri", "on"].each { p ->
                             it.updateStatus("action", p, bridge.value.groups[groupId].action[p])
                          }
+                         it.updateStatus("action", "lights", bridge.value.groups[groupId]["lights"])
 				    }
                 }
             }
