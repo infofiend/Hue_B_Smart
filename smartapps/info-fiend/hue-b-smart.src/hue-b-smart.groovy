@@ -25,6 +25,7 @@
  *	Version 1.8 Added workaround for device subscription not working, Added Extra Bulb Types to reduce IDE Log errors, Added On/Off Plug Device Type
  * 	Version 1.81 Bug Fixes
  * 	Version 1.82 Makes it easier to see full name of Bulb or Scenes when adding or removing them
+ * 	Version 1.83 More changes to choose Scene/Bulb/Group Pages 
  */
  
 import groovy.json.*
@@ -275,7 +276,7 @@ def bridges() {
     // Send bridge discovery request every 15 seconds
     if ((state.bridgeRefreshCount % 5) == 1) {
         discoverHueBridges()
-        logMessage("Bridge Discovery Sent - Version is 1.82", "warn")
+        logMessage("Bridge Discovery Sent - Version is 1.83", "warn")
     } else {
         // if we're not sending bridge discovery, verify bridges instead
         verifyHueBridges()
@@ -519,7 +520,7 @@ def chooseBulbs(params) {
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.label
    				def id = it.value.id
-				href(name:"${devId}", page:"chooseBulbs", description:"BULB ID [${id}]", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				href(name:"${devId}", page:"chooseBulbs", description:"Bulb ID [${id}]", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Bulbs") {
@@ -527,7 +528,7 @@ def chooseBulbs(params) {
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.label
    				def id = it.value.id
-				href(name:"${devId}", page:"chooseBulbs", description:"BULB ID [${id}]", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
+				href(name:"${devId}", page:"chooseBulbs", description:"Bulb ID [${id}]", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
 		}
         }
     }
@@ -607,24 +608,35 @@ def chooseScenes(params) {
     dynamicPage(name:"chooseScenes", title: "", install: true) {
 		section("") { 
 			href(name: "manageBridge", page: "manageBridge", description: "", title: "Back to Bridge", params: [mac: params.mac])
-        }
+        }    		
+        
     	section("Added Scenes") {
-			addedScenes.sort{it.value.name}.each { 
+			addedScenes.sort{it.value.group}.each { 
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.label
                 		def lights = it.value.lights
-				href(name:"${devId}", page:"chooseScenes", description:"Uses Lights ${lights}", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				if(it.value.type == "LightScene"){
+                			href(name:"${devId}", page:"chooseScenes", description:"LightScene using Lights ${lights}", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				}
+				else{
+               			 	href(name:"${devId}", page:"chooseScenes", description:"Group ${it.value.group} using Lights ${lights}", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				}
 			}
 		}
         section("Available Scenes") {
-			availableScenes.sort{it.value.name}.each { 
+			availableScenes.sort{it.value.group}.each { 
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.label
 				def lights = it.value.lights
-				href(name:"${devId}", page:"chooseScenes", description:"Uses Lights ${lights}", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
+				if(it.value.type == "LightScene"){
+               				href(name:"${devId}", page:"chooseScenes", description:"LightScene Using Lights ${lights}", title:"Add ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				}
+				else{
+                			href(name:"${devId}", page:"chooseScenes", description:"Group ${it.value.group} Using Lights ${lights}", title:"Add ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				}
 			}
 		}
-    }
+	}
 }
 
 def chooseGroups(params) {
@@ -749,17 +761,16 @@ def chooseGroups(params) {
 			addedGroups.sort{it.value.name}.each { 
 				def devId = "${params.mac}/GROUP${it.key}"
 				def name = it.value.label
-				href(name:"${devId}", page:"chooseGroups", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				href(name:"${devId}", page:"chooseGroups", description:"GroupID-${it.key}", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Hue Groups") {
 			availableGroups.sort{it.value.name}.each { 
 				def devId = "${params.mac}/GROUP${it.key}"
 				def name = it.value.label
-				href(name:"${devId}", page:"chooseGroups", description:"", title:"Add ${name}", params: [mac: params.mac, add: it.key])
+				href(name:"${devId}", page:"chooseGroups", description:"GroupID-${it.key}", title:"Add ${name}", params: [mac: params.mac, add: it.key])
 			}
-        }
-        
+        	}     
 	}
 }
 
