@@ -20,6 +20,7 @@
  *	Version 1.71 Added version information on IDE Logging
  *	Version 1.8 Added workaround for device subscription not working, Added Extra Bulb Types to reduce IDE Log errors, Added On/Off Plug Device Type
  * 	Version 1.81 Bug Fixes
+ * 	Version 1.82 Makes it easier to see full name of Bulb or Scenes when adding or removing them
  */
 
 import groovy.json.*
@@ -241,7 +242,7 @@ def parse(String description) {
 			def bridge = parent.getBridge(parsedEvent.mac)
             def group 
 			def commandReturn = []
-            log.trace "Version 1.81"
+            log.trace "Version 1.82"
 			/* responses from bulb/group/scene/ command. Figure out which device it is, then pass it along to the device. */
 			if (body[0] != null && body[0].success != null) {
             	log.trace "${body[0].success}"
