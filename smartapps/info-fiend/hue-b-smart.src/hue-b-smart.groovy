@@ -24,6 +24,7 @@
  *	Version 1.71 Smartthings was storing Transition Time as decimal when it shouldn't, added done a work around
  *	Version 1.8 Added workaround for device subscription not working, Added Extra Bulb Types to reduce IDE Log errors, Added On/Off Plug Device Type
  * 	Version 1.81 Bug Fixes
+ * 	Version 1.82 Makes it easier to see full name of Bulb or Scenes when adding or removing them
  */
  
 import groovy.json.*
@@ -274,7 +275,7 @@ def bridges() {
     // Send bridge discovery request every 15 seconds
     if ((state.bridgeRefreshCount % 5) == 1) {
         discoverHueBridges()
-        logMessage("Bridge Discovery Sent - Version is 1.81", "warn")
+        logMessage("Bridge Discovery Sent - Version is 1.82", "warn")
     } else {
         // if we're not sending bridge discovery, verify bridges instead
         verifyHueBridges()
@@ -518,7 +519,7 @@ def chooseBulbs(params) {
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.label
    				def id = it.value.id
-				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Remove ${name} - BULB ID [${id}]", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				href(name:"${devId}", page:"chooseBulbs", description:"BULB ID [${id}]", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Bulbs") {
@@ -526,7 +527,7 @@ def chooseBulbs(params) {
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.label
    				def id = it.value.id
-				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Add ${name} - BULB ID [${id}]", params: [mac: params.mac, add: it.key], submitOnChange: true )
+				href(name:"${devId}", page:"chooseBulbs", description:"BULB ID [${id}]", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
 		}
         }
     }
@@ -612,7 +613,7 @@ def chooseScenes(params) {
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.label
                 		def lights = it.value.lights
-				href(name:"${devId}", page:"chooseScenes", description:"", title:"Remove ${name} - ${lights}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				href(name:"${devId}", page:"chooseScenes", description:"Uses Lights ${lights}", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Scenes") {
@@ -620,7 +621,7 @@ def chooseScenes(params) {
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.label
 				def lights = it.value.lights
-				href(name:"${devId}", page:"chooseScenes", description:"", title:"Add ${name} - ${lights}", params: [mac: params.mac, add: it.key], submitOnChange: true )}
+				href(name:"${devId}", page:"chooseScenes", description:"Uses Lights ${lights}", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
         }
     }
 }
