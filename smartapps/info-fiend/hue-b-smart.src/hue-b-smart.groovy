@@ -622,7 +622,8 @@ def chooseScenes(params) {
 				def name = it.value.label
 				def lights = it.value.lights
 				href(name:"${devId}", page:"chooseScenes", description:"Uses Lights ${lights}", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
-        }
+			}
+		}
     }
 }
 
