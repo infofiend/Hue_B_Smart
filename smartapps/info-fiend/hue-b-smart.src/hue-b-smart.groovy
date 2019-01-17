@@ -629,10 +629,10 @@ def chooseScenes(params) {
 				def name = it.value.label
 				def lights = it.value.lights
 				if(it.value.type == "LightScene"){
-               				href(name:"${devId}", page:"chooseScenes", description:"LightScene Using Lights ${lights}", title:"Add ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+               				href(name:"${devId}", page:"chooseScenes", description:"LightScene Using Lights ${lights}", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
 				}
 				else{
-                			href(name:"${devId}", page:"chooseScenes", description:"Group ${it.value.group} Using Lights ${lights}", title:"Add ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+                			href(name:"${devId}", page:"chooseScenes", description:"Group ${it.value.group} Using Lights ${lights}", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
 				}
 			}
 		}
