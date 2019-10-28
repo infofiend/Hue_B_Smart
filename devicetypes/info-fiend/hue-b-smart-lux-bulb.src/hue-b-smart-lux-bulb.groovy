@@ -198,7 +198,8 @@ def off() {
 	        headers: [
 	        	host: "${commandData.ip}"
 			],
-	        body: [on: false, transitiontime: tt]
+	        //body: [on: false, transitiontime: tt] # Sending transitiontime with on: false sometimes results in bri level at 1 when on: true sent outside of app
+		body: [on: false]
 		])
 //	)
 }
